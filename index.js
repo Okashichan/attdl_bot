@@ -206,7 +206,3 @@ async function download_video(url){
 
     return Buffer.from(res.data, 'utf-8');
 }
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
