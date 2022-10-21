@@ -28,12 +28,23 @@ bot.onText(urlRe, async (msg) => {
             console.log(err.response.body);
         });
     } else if (dl?.imgs){
-        dl.imgs.forEach(el => {
-            bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId }).catch((err) => {
-                console.log(err.code);
-                console.log(err.response.body);
-            });
+        let interval = 3000; 
+        dl.imgs.forEach(function (el, index) {
+            setTimeout(function () {
+                bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId }).catch((err) => {
+                    console.log(err.code);
+                    console.log(err.response.body);
+                });
+            }, index * interval);
         });
+        // dl.imgs.forEach(async el => {
+        //     bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId }).catch((err) => {
+        //         console.log(err.code);
+        //         console.log(err.response.body);
+        //     });
+        //     await sleep(1000);
+        //     console.log('xd');
+        // });
     }
     else {
         console.log(`onText(${userMsg})|Something realy went wrong...`);
@@ -72,8 +83,6 @@ bot.on('inline_query', async (msg) => {
                 }
             }
         });
-        
-        console.log(results);
 
         bot.answerInlineQuery(queryId, results).catch((err) => {
             console.log(err.code);
@@ -115,8 +124,8 @@ bot.on('inline_query', async (msg) => {
     // });
 });
 
-bot.on('polling_error', (error) => {
-    console.log(error.code);
+bot.on('polling_error', (err) => {
+    console.log(err.code);
     console.log(err.response.body);
 });
 
@@ -138,6 +147,8 @@ async function handle_link(url, id, msgId){
     const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=)([\d]*)/gm;
 
     let videoId = url.split(re)[3];
+
+    console.log(videoId)
 
     let res = await axios({
         method: 'get',
@@ -194,4 +205,8 @@ async function download_video(url){
         .catch(e => console.log(e));
 
     return Buffer.from(res.data, 'utf-8');
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
