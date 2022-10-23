@@ -172,7 +172,7 @@ async function handle_link(url, id, msgId){
         let imgs = res.data.aweme_detail.image_post_info.images.map((el) => {
                 return {
                     type: 'photo',
-                    media: el.display_image.url_list[1]
+                    media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
                 }
         });
 
