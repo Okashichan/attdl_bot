@@ -29,7 +29,7 @@ bot.onText(urlRe, async (msg) => {
             console.log(err.response.body);
         });
     } else if (dl?.imgs){
-        let interval = chatType === 'private' ? 1000 : 60000; 
+        let interval = chatType === 'private' ? 1000 : 65000; 
         dl.imgs.forEach(function (el, index) {
             setTimeout(function () {
                 console.log(`       part #${index+1}; size=${el.length}; timeout=${interval * index}`);
