@@ -11,7 +11,7 @@ const bot = new TelegramBot(token, {polling: true});
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
   
-    bot.sendMessage(chatId, 'This bot downloads tiktok videos directly to telegram.\nThere are 3 ways of usage:\n\n1. Just send video to this bot, and it will download it for you.\n2. Add this bot to any group, so it will handle all tiktok links that were sent and answer with video.\n3. Use inline query (e.g. @attdl_bot url)\n\nIt also supports TikToks with images, but in groups there are 1 min delay in sending. In private chat with the bot, there is only 1 sec delay. Also, if there are a lot of images, the inline query might work only after you sent TikTok to any chat, which were handled.');
+    bot.sendMessage(chatId, 'This bot downloads tiktok videos directly to telegram.\nThere are 3 ways of usage:\n\n1. Just send video to this bot, and it will download it for you.\n2. Add this bot to any group, so it will handle all tiktok links that were sent and answer with video.\n3. Use inline query (e.g. @attdl_bot url)\n\nIt also supports TikToks with images, but in groups there are 1 min delay in sending. In private chat with the bot, there is only 3 sec delay. Also, if there are a lot of images, the inline query might work only after you sent TikTok to any chat, which were handled.');
 });
 
 bot.onText(urlRe, async (msg) => {
@@ -29,7 +29,7 @@ bot.onText(urlRe, async (msg) => {
             console.log(err.response.body);
         });
     } else if (dl?.imgs){
-        let interval = chatType === 'private' ? 1000 : 65000; 
+        let interval = chatType === 'private' ? 3000 : 65000; 
         dl.imgs.forEach(function (el, index) {
             setTimeout(function () {
                 console.log(`       part #${index+1}; size=${el.length}; timeout=${interval * index}`);
