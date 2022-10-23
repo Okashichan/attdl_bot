@@ -44,7 +44,7 @@ bot.onText(urlRe, async (msg) => {
         //     });
         //     await sleep(1000);
         //     console.log('xd');
-        // });
+        // });а бля
     }
     else {
         console.log(`onText(${userMsg})|Something realy went wrong...`);
