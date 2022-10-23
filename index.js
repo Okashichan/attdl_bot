@@ -11,13 +11,14 @@ const bot = new TelegramBot(token, {polling: true});
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
   
-    bot.sendMessage(chatId, 'This bot downloads tiktok videos directly to telegram.\nThere are 3 ways of usage:\n\n1. Just send video to this bot, and it will download it for you.\n2. Add this bot to any group, so it will handle all tiktok links that were sent and answer with video.\n3. Use inline query (e.g. @attdl_bot url)');
+    bot.sendMessage(chatId, 'This bot downloads tiktok videos directly to telegram.\nThere are 3 ways of usage:\n\n1. Just send video to this bot, and it will download it for you.\n2. Add this bot to any group, so it will handle all tiktok links that were sent and answer with video.\n3. Use inline query (e.g. @attdl_bot url)\n\nIt also supports TikToks with images, but in groups there are 1 min delay in sending. In private chat with the bot, there is only 1 sec delay. Also, if there are a lot of images, the inline query might work only after you sent TikTok to any chat, which were handled.');
 });
 
 bot.onText(urlRe, async (msg) => {
     const chatId = msg.chat.id;
     const userMsgId = msg.message_id;
     const userMsg = msg?.text;
+    const chatType = msg.chat.type;
 
     let dl = await handle_link(userMsg);
     if (dl === undefined || dl === null) {
@@ -28,14 +29,15 @@ bot.onText(urlRe, async (msg) => {
             console.log(err.response.body);
         });
     } else if (dl?.imgs){
-        let interval = 3000; 
+        let interval = chatType === 'private' ? 1000 : 60000; 
         dl.imgs.forEach(function (el, index) {
             setTimeout(function () {
-                bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId }).catch((err) => {
+                console.log(`       part #${index+1}; size=${el.length}; timeout=${interval * index}`);
+                bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId, disable_notification: true, allow_sending_without_reply: true }).catch((err) => {
                     console.log(err.code);
                     console.log(err.response.body);
                 });
-            }, index * interval);
+            }, interval * index);
         });
         // dl.imgs.forEach(async el => {
         //     bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId }).catch((err) => {
@@ -44,7 +46,7 @@ bot.onText(urlRe, async (msg) => {
         //     });
         //     await sleep(1000);
         //     console.log('xd');
-        // });а бля
+        // });
     }
     else {
         console.log(`onText(${userMsg})|Something realy went wrong...`);
@@ -172,9 +174,11 @@ async function handle_link(url, id, msgId){
                     type: 'photo',
                     media: el.display_image.url_list[1]
                 }
-            });
+        });
+
+        console.log(`   chunk size: ${imgs.length}`);
         
-        const perChunk = 10 // images limit
+        const perChunk = 9 // images limit
 
         const result = imgs.reduce((resultArray, item, index) => { 
             const chunkIndex = Math.floor(index / perChunk)
