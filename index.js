@@ -35,7 +35,7 @@ bot.onText(urlRe, async (msg) => {
                 console.log(`       part #${index+1}; size=${el.length}; timeout=${interval * index}`);
                 bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId, disable_notification: true, allow_sending_without_reply: true }).catch((err) => {
                     console.log(err.code);
-                    console.log(err.response.body);
+                    console.log(err.response?.body);
                 });
             }, interval * index);
         });
@@ -106,7 +106,7 @@ bot.on('inline_query', async (msg) => {
 
         bot.answerInlineQuery(queryId, results).catch((err) => {
             console.log(err.code);
-            console.log(err.response.body);
+            console.log(err.response?.body);
         });
         //console.log(`inline_query(${query})|Images are not implemented...`);
     }
@@ -128,7 +128,7 @@ bot.on('inline_query', async (msg) => {
 
 bot.on('polling_error', (err) => {
     console.log(err.code);
-    console.log(err.response.body);
+    console.log(err.response?.body);
 });
 
 async function get_real_id(url){
