@@ -2,6 +2,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 require('dotenv').config();
 
+const {startTextEn, helpTextEn} = require('./locale/en');
+const {startTextUa, helpTextUa} = require('./locale/ua');
+
 const token = process.env.TELEGRAM_BOT_TOKEN;
 // const urlRe = /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig;
 const urlRe = /https?:\/\/(?:m|www|vm|vt)\.tiktok\.com\//gm;
@@ -10,15 +13,28 @@ const bot = new TelegramBot(token, {polling: true});
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
+    const language = msg.from.language_code;
+
+    const startText = language === 'uk' ? startTextUa : startTextEn;
   
-    bot.sendMessage(chatId, 'This bot downloads tiktok videos directly to telegram.\nThere are 3 ways of usage:\n\n1. Just send video to this bot, and it will download it for you.\n2. Add this bot to any group, so it will handle all tiktok links that were sent and answer with video.\n3. Use inline query (e.g. @attdl_bot url)\n\nIt also supports TikToks with images, but in groups there are 1 min delay in sending. In private chat with the bot, there is only 3 sec delay. Also, if there are a lot of images, the inline query might work only after you sent TikTok to any chat, which were handled.');
+    bot.sendMessage(chatId, startText);
 });
 
-bot.onText(urlRe, async (msg) => {
+bot.onText(/\/help/, (msg) => {
+    const chatId = msg.chat.id;
+    const language = msg.from.language_code;
+
+    const helpText = language === 'uk' ? helpTextUa : helpTextEn;
+  
+    bot.sendMessage(chatId, helpText);
+});
+
+bot.onText(urlRe, async (msg, match) => {
     const chatId = msg.chat.id;
     const userMsgId = msg.message_id;
     const userMsg = msg?.text;
     const chatType = msg.chat.type;
+    // const url = match[0];
 
     let dl = await handle_link(userMsg);
     if (dl === undefined || dl === null) {
@@ -29,7 +45,7 @@ bot.onText(urlRe, async (msg) => {
             console.log(err.response.body);
         });
     } else if (dl?.imgs){
-        let interval = chatType === 'private' ? 3000 : dl.imgs.length > 2 ? 65000 : 3000; 
+        let interval = chatType === 'private' ? 3000 : dl.imgs.flat(1).length >= 18 ? 65000 : 3000;
         dl.imgs.forEach(function (el, index) {
             setTimeout(function () {
                 console.log(`       part #${index+1}; size=${el.length}; timeout=${interval * index}`);
@@ -140,7 +156,7 @@ async function get_real_id(url){
         .catch(err => console.log(err));
 }
 
-async function handle_link(url, id, msgId){
+async function handle_link(url){
     if (url.split(' ').length > 1) return;
     if (!url.includes('tiktok')) return;
     if (url.includes('vt.tiktok.com')) url = await get_real_id(url);
@@ -150,7 +166,7 @@ async function handle_link(url, id, msgId){
 
     let videoId = url.split(re)[3];
 
-    console.log(videoId)
+    console.log(videoId);
 
     let res = await axios({
         method: 'get',
