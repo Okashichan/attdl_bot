@@ -1,21 +1,20 @@
 const TelegramBot = require('node-telegram-bot-api');
+const locale = require('./locale');
 const axios = require('axios');
 require('dotenv').config();
 
-const {startTextEn, helpTextEn} = require('./locale/en');
-const {startTextUa, helpTextUa} = require('./locale/ua');
-
 const token = process.env.TELEGRAM_BOT_TOKEN;
+
 // const urlRe = /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig;
 const urlRe = /https?:\/\/(?:m|www|vm|vt)\.tiktok\.com\//gm;
 
-const bot = new TelegramBot(token, {polling: true});
+const bot = new TelegramBot(token, { polling: true, filepath: false });
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const language = msg.from.language_code;
 
-    const startText = language === 'uk' ? startTextUa : startTextEn;
+    const startText = language === 'uk' ? locale['UA'].start : locale['EN'].start;
   
     bot.sendMessage(chatId, startText);
 });
@@ -24,12 +23,12 @@ bot.onText(/\/help/, (msg) => {
     const chatId = msg.chat.id;
     const language = msg.from.language_code;
 
-    const helpText = language === 'uk' ? helpTextUa : helpTextEn;
+    const helpText = language === 'uk' ? locale['UA'].help : locale['EN'].help;
   
     bot.sendMessage(chatId, helpText);
 });
 
-bot.onText(urlRe, async (msg, match) => {
+bot.onText(urlRe, async (msg) => {
     const chatId = msg.chat.id;
     const userMsgId = msg.message_id;
     const userMsg = msg?.text;
@@ -40,9 +39,28 @@ bot.onText(urlRe, async (msg, match) => {
     if (dl === undefined || dl === null) {
         console.log(`onText(${userMsg})|failed to handle your link...`);    
     } else if (dl?.urls) {
-        bot.sendVideo(chatId, dl.urls[0], { reply_to_message_id: userMsgId }).catch((err) => {
+        bot.sendVideo(chatId, dl.urls[0], { reply_to_message_id: userMsgId, allow_sending_without_reply: true }).catch(async (err) => {
             console.log(err.code);
-            console.log(err.response.body);
+            console.log(err.response?.body);
+            console.log(`onText(${userMsg})|Trying to download video...`);
+
+            bot.sendMessage(chatId, '🐌 I\'m Fast as Fuck Boi');
+            if (err.response?.body.error_code === 400){
+                let videoBuffer = await download_video(dl.urls[0]);
+                if (videoBuffer === undefined || videoBuffer === null) return;
+
+                const statusInterval = setInterval(() => {
+                    bot.sendChatAction(chatId, 'upload_video');
+                }, 5000);
+
+                bot.sendVideo(chatId, videoBuffer, { reply_to_message_id: userMsgId, allow_sending_without_reply: true }).catch(async (err) => {
+                    console.log(err.code);
+                    console.log(err.response?.body);
+                })
+                .then(() => {
+                    clearInterval(statusInterval);
+                })
+            }
         });
     } else if (dl?.imgs){
         // let interval = chatType === 'private' ? 3000 : 65000;
@@ -53,7 +71,9 @@ bot.onText(urlRe, async (msg, match) => {
                 bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId, disable_notification: true, allow_sending_without_reply: true }).catch((err) => {
                     console.log(err.code);
                     console.log(err.response?.body);
-                });
+                }).finally(() => {
+                        if (index == dl.imgs.length - 1) bot.sendAudio(chatId, dl.song.url, { reply_to_message_id: userMsgId, disable_notification: true, allow_sending_without_reply: true, caption: dl.song.title });
+                    });
             }, interval * index);
         });
         // dl.imgs.forEach(async el => {
@@ -121,6 +141,14 @@ bot.on('inline_query', async (msg) => {
             }
         });
 
+        // results.push({
+        //     type: 'audio',
+        //     id: 0,
+        //     audio_url: dl.song.url,
+        //     title: dl.song.title,
+        //     caption: dl.song.title
+        // });
+
         bot.answerInlineQuery(queryId, results).catch((err) => {
             console.log(err.code);
             console.log(err.response?.body);
@@ -180,7 +208,7 @@ async function handle_link(url){
     //     console.log(element.display_image.url_list[1]);
     // });
 
-    if (res.data.aweme_detail === undefined || res.data.aweme_detail === null) {
+    if (res?.data.aweme_detail === undefined || res?.data.aweme_detail === null) {
         console.log(`handle_link(${url})|failed to handle api request...`);    
         return;
     }
@@ -195,22 +223,27 @@ async function handle_link(url){
 
         console.log(`   chunk size: ${imgs.length}`);
         
-        const perChunk = 9 // images limit
+        const perChunk = 9; // images limit
 
         const result = imgs.reduce((resultArray, item, index) => { 
-            const chunkIndex = Math.floor(index / perChunk)
+            const chunkIndex = Math.floor(index / perChunk);
 
             if(!resultArray[chunkIndex]) {
                 resultArray[chunkIndex] = [] 
             }
 
-            resultArray[chunkIndex].push(item)
+            resultArray[chunkIndex].push(item);
 
-            return resultArray
+            return resultArray;
         }, []);
 
         return {
-            imgs: result
+            imgs: result,
+            song: {
+                url: res.data.aweme_detail.music.play_url.uri,
+                title: res.data.aweme_detail.music.author + '\n' + res.data.aweme_detail.music.title,
+                cover: res.data.aweme_detail.music.cover_thumb.url_list[2]	
+            }
         };
     }
 
@@ -223,7 +256,7 @@ async function handle_link(url){
 
 async function download_video(url){
     let res = await axios.get(url, { responseType: 'arraybuffer' })
-        .catch(e => console.log(e));
+        .catch((err) => console.log(`download_video(${url})|failed to download video...`));
 
     return Buffer.from(res.data, 'utf-8');
 }
