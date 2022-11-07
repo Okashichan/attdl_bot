@@ -39,40 +39,69 @@ bot.onText(urlRe, async (msg) => {
     if (dl === undefined || dl === null) {
         console.log(`onText(${userMsg})|failed to handle your link...`);    
     } else if (dl?.urls) {
-        bot.sendVideo(chatId, dl.urls[0], { reply_to_message_id: userMsgId, allow_sending_without_reply: true }).catch(async (err) => {
+        const sendVideoOptions = { 
+            reply_to_message_id: userMsgId, 
+            allow_sending_without_reply: true 
+        };
+
+        bot.sendVideo(chatId, dl.urls[0], sendVideoOptions).catch(async (err) => {
             console.log(err.code);
             console.log(err.response?.body);
             console.log(`onText(${userMsg})|Trying to download video...`);
 
-            bot.sendMessage(chatId, '🐌 I\'m Fast as Fuck Boi');
             if (err.response?.body.error_code === 400){
-                let videoBuffer = await download_video(dl.urls[0]);
+                bot.sendMessage(chatId, '🐌 I\'m Fast as Fuck Boi');
+
+                let videoBuffer = await download(dl.urls[0]);
                 if (videoBuffer === undefined || videoBuffer === null) return;
+
+                bot.sendChatAction(chatId, 'upload_video');
 
                 const statusInterval = setInterval(() => {
                     bot.sendChatAction(chatId, 'upload_video');
                 }, 5000);
 
-                bot.sendVideo(chatId, videoBuffer, { reply_to_message_id: userMsgId, allow_sending_without_reply: true }).catch(async (err) => {
+                bot.sendVideo(chatId, videoBuffer, sendVideoOptions).catch(async (err) => {
                     console.log(err.code);
                     console.log(err.response?.body);
                 })
                 .then(() => {
                     clearInterval(statusInterval);
-                })
+                });
             }
         });
     } else if (dl?.imgs){
         let interval = chatType === 'private' ? 3000 : 65000;
         // let interval = chatType === 'private' ? 3000 : dl.imgs.length > 2 ? 65000 : 10000;
+        sendMediaGroupOptions = { 
+            reply_to_message_id: userMsgId, 
+            disable_notification: true, 
+            allow_sending_without_reply: true 
+        };
+
         dl.imgs.forEach(function (el, index) {
             setTimeout(function () {
                 console.log(`       part #${index+1}; size=${el.length}; timeout=${interval * index}`);
-                bot.sendMediaGroup(chatId, el, { reply_to_message_id: userMsgId, disable_notification: true, allow_sending_without_reply: true }).catch((err) => {
+                bot.sendMediaGroup(chatId, el, sendMediaGroupOptions).catch((err) => {
                     console.log(err.code);
                     console.log(err.response?.body);
-                }).finally(() => {
-                        if (index == dl.imgs.length - 1) bot.sendAudio(chatId, dl.song.url, { reply_to_message_id: userMsgId, disable_notification: true, allow_sending_without_reply: true, caption: dl.song.title });
+                }).finally(async () => {
+                        if (index == dl.imgs.length - 1) {
+                            bot.sendChatAction(chatId, 'upload_audio');
+                            let audioBuffer = await download(dl.song.url);
+                            if (audioBuffer === undefined || audioBuffer === null) return;
+
+                            const sendAudioOptions = {
+                                reply_to_message_id: userMsgId,
+                                disable_notification: true, 
+                                allow_sending_without_reply: true, 
+                                performer: dl.song.author, 
+                                title: dl.song.title, 
+                                duration: dl.song.duration, 
+                            };
+
+                            bot.sendAudio(chatId, audioBuffer, sendAudioOptions, { filename: dl.song.title + '.mp3' });
+                        }
                     });
             }, interval * index);
         });
@@ -89,7 +118,7 @@ bot.onText(urlRe, async (msg) => {
         console.log(`onText(${userMsg})|Something realy went wrong...`);
     }
 
-    // let videoBuffer = await download_video(dl);
+    // let videoBuffer = await download(dl);
     // if (videoBuffer === undefined || videoBuffer === null) {
     //     console.log('failed to download video..');    
     //     return;
@@ -116,9 +145,17 @@ bot.on('inline_query', async (msg) => {
                 title: `Link ${index+1}`,
                 thumb_url: dl.cover,
                 mime_type: 'video/mp4',
-                input_message_content: {
-                    message_text: `[Download](${item}) \\| [Source](${dl.origin_url})`,
-                    parse_mode: 'MarkdownV2'
+                reply_markup: {
+                    inline_keyboard: [
+                        [{
+                            text: 'Watch on TikTok',
+                            url: dl.origin_url
+                        }],
+                        [{
+                            text: 'Download',
+                            url: item
+                        }]
+                    ]
                 }
             }
         });
@@ -241,7 +278,9 @@ async function handle_link(url){
             imgs: result,
             song: {
                 url: res.data.aweme_detail.music.play_url.uri,
-                title: res.data.aweme_detail.music.author + '\n' + res.data.aweme_detail.music.title,
+                duration: res.data.aweme_detail.music.duration,
+                title: res.data.aweme_detail.music.title,
+                author: res.data.aweme_detail.music.owner_handle.length && res.data.aweme_detail.music.owner_handle.length !== 0 < res.data.aweme_detail.music.author.length ? res.data.aweme_detail.music.owner_handle : res.data.aweme_detail.music.author,
                 cover: res.data.aweme_detail.music.cover_thumb.url_list[2]	
             }
         };
@@ -254,9 +293,9 @@ async function handle_link(url){
     };
 }
 
-async function download_video(url){
+async function download(url){
     let res = await axios.get(url, { responseType: 'arraybuffer' })
-        .catch((err) => console.log(`download_video(${url})|failed to download video...`));
+        .catch((err) => console.log(`download(${url})|failed to download video...`));
 
     return Buffer.from(res.data, 'utf-8');
 }
