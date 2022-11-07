@@ -4,6 +4,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
+const cachedChat = process.env.TELEGRAM_CACHED_CHAT;
 
 // const urlRe = /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig;
 const urlRe = /https?:\/\/(?:m|www|vm|vt)\.tiktok\.com\//gm;
@@ -13,6 +14,8 @@ const bot = new TelegramBot(token, { polling: true, filepath: false });
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const language = msg.from.language_code;
+
+    console.log(chatId);
 
     const startText = language === 'uk' ? locale['UA'].start : locale['EN'].start;
   
@@ -172,19 +175,37 @@ bot.on('inline_query', async (msg) => {
             console.log(err.response.body);
         });
     } else if (msg.query.includes('audio')){
-        result = [{
-            type: 'audio',
-            id: 0,
-            audio_url: dl.song.url,
-            title: dl.song.title,
-            performer: dl.song.author,
-            audio_duration: dl.song.duration
-        }];
 
-        bot.answerInlineQuery(queryId, result).catch((err) => {
-            console.log(err.code);
-            console.log(err.response.body);
-        });
+        let audioBuffer = await download(dl.song.url);
+        if (audioBuffer === undefined || audioBuffer === null) return;
+
+        const sendAudioOptions = {
+            disable_notification: true,
+            performer: dl.song.author, 
+            title: dl.song.title, 
+            duration: dl.song.duration, 
+        };
+
+        console.log(`inline_query(${query})|trying to cache audio...`);
+
+        bot.sendAudio(cachedChat, audioBuffer, sendAudioOptions, { filename: dl.song.title + '.mp3' })
+            .then(msg => {
+                let file_id = msg.audio.file_id;
+
+                result = [{
+                    type: 'audio',
+                    id: 0,
+                    audio_file_id: file_id
+                }];
+        
+                bot.answerInlineQuery(queryId, result).catch((err) => {
+                    console.log(err.code);
+                    console.log(err.response.body);
+                });
+            }).catch((err) => {
+                console.log(err.code);
+                console.log(err.response?.body);
+            });
     } else if (dl?.imgs){
         let results = dl.imgs.flat(1).map((item, index) => {
             return {
