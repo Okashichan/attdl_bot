@@ -47,6 +47,13 @@ bot.onText(urlRe, async (msg) => {
         bot.sendVideo(chatId, dl.urls[0], sendVideoOptions).catch(async (err) => {
             console.log(err.code);
             console.log(err.response?.body);
+
+            if (dl.data_size > 52428800) {
+                console.log(`onText(${userMsg})|video is to big(${dl.data_size} bytes)...`);
+                bot.sendMessage(chatId, '🐌 Sowwy onii-chan... it\'s too big for me');
+                return;
+            }
+
             console.log(`onText(${userMsg})|Trying to download video...`);
 
             if (err.response?.body.error_code === 400){
@@ -130,13 +137,13 @@ bot.onText(urlRe, async (msg) => {
 
 bot.on('inline_query', async (msg) => {
     let queryId = msg.id;
-    let query = msg.query;
+    let query = msg.query.includes('audio') ? msg.query.replace('audio', '') : msg.query;
 
     let dl = await handle_link(query);
     if (dl === undefined || dl === null) {
-        console.log(`inline_query(${query})|failed to handle your link...`);    
-        return;
-    } else if (dl?.urls) {
+        console.log(`inline_query(${query})|failed to handle your link...`);
+    }
+    else if (dl?.urls) {
         let results = dl.urls.map((item, index) => {
             return {
                 type: 'video',
@@ -149,7 +156,7 @@ bot.on('inline_query', async (msg) => {
                     inline_keyboard: [
                         [{
                             text: 'Watch on TikTok',
-                            url: dl.origin_url
+                            url: query
                         }],
                         [{
                             text: 'Download',
@@ -164,6 +171,20 @@ bot.on('inline_query', async (msg) => {
             console.log(err.code);
             console.log(err.response.body);
         });
+    } else if (msg.query.includes('audio')){
+        result = [{
+            type: 'audio',
+            id: 0,
+            audio_url: dl.song.url,
+            title: dl.song.title,
+            performer: dl.song.author,
+            audio_duration: dl.song.duration
+        }];
+
+        bot.answerInlineQuery(queryId, result).catch((err) => {
+            console.log(err.code);
+            console.log(err.response.body);
+        });
     } else if (dl?.imgs){
         let results = dl.imgs.flat(1).map((item, index) => {
             return {
@@ -171,9 +192,25 @@ bot.on('inline_query', async (msg) => {
                 id: index,
                 photo_url: item.media,
                 thumb_url: item.media,
-                input_message_content: {
-                    message_text:`[Download](${item.media}) \\| [Source](${query})`,
-                    parse_mode: 'MarkdownV2'
+                reply_markup: {
+                    inline_keyboard: [
+                        [{
+                            text: 'Watch on TikTok',
+                            url: query
+                        }],
+                        [{
+                            text: 'DL',
+                            url: item.media
+                        },
+                        {
+                            text: 'Audio',
+                            switch_inline_query_current_chat: query + 'audio'
+                        },
+                        {
+                            text: 'Pics',
+                            switch_inline_query_current_chat: query
+                        }]
+                    ]
                 }
             }
         });
@@ -289,7 +326,8 @@ async function handle_link(url){
     return {
         urls: res.data.aweme_detail?.video.play_addr.url_list,
         cover: res.data.aweme_detail?.video.cover.url_list[0],
-        origin_url: res.data.aweme_detail?.share_info.share_url
+        origin_url: res.data.aweme_detail?.share_info.share_url,
+        data_size: res.data.aweme_detail?.video.play_addr.data_size
     };
 }
 
