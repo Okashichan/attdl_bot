@@ -15,8 +15,6 @@ bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const language = msg.from.language_code;
 
-    console.log(chatId);
-
     const startText = language === 'uk' ? locale['UA'].start : locale['EN'].start;
   
     bot.sendMessage(chatId, startText);
