@@ -275,7 +275,10 @@ async function get_real_id(url){
         url: url,
     })
     .then(res => res.request.res.responseUrl)
-        .catch(err => console.log(err));
+        .catch(err => {
+            console.log(`get_real_id(${url})|Somehow failed to get real id...`);
+            if (err.response.status === 404) return err.request.res.responseUrl;
+        });
 }
 
 async function handle_link(url){
