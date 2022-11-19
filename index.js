@@ -1,4 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
+const { parse } = require('node-html-parser');
 const locale = require('./locale');
 const axios = require('axios');
 require('dotenv').config();
@@ -39,6 +40,21 @@ bot.onText(urlRe, async (msg) => {
     let dl = await handle_link(userMsg);
     if (dl === undefined || dl === null) {
         console.log(`onText(${userMsg})|failed to handle your link...`);    
+    } else if (dl?.song_only) {
+        bot.sendChatAction(chatId, 'upload_audio');
+        let audioBuffer = await download(dl.song_only.url);
+        if (audioBuffer === undefined || audioBuffer === null) return;
+
+        const sendAudioOptions = {
+            reply_to_message_id: userMsgId,
+            disable_notification: true, 
+            allow_sending_without_reply: true, 
+            performer: dl.song_only.author, 
+            title: dl.song_only.title, 
+            duration: dl.song_only.duration, 
+        };
+
+        bot.sendAudio(chatId, audioBuffer, sendAudioOptions, { filename: dl.song_only.title + '.mp3' });
     } else if (dl?.urls) {
         const sendVideoOptions = { 
             reply_to_message_id: userMsgId, 
@@ -78,7 +94,7 @@ bot.onText(urlRe, async (msg) => {
                 });
             }
         });
-    } else if (dl?.imgs){
+    } else if (dl?.imgs) {
         let interval = chatType === 'private' ? 3000 : 65000;
         // let interval = chatType === 'private' ? 3000 : dl.imgs.length > 2 ? 65000 : 10000;
         sendMediaGroupOptions = { 
@@ -121,8 +137,7 @@ bot.onText(urlRe, async (msg) => {
         //     await sleep(1000);
         //     console.log('xd');
         // });
-    }
-    else {
+    } else {
         console.log(`onText(${userMsg})|Something realy went wrong...`);
     }
 
@@ -272,7 +287,7 @@ bot.on('polling_error', (err) => {
 async function get_real_id(url){
     return axios({
         method: 'get',
-        url: url,
+        url: url
     })
     .then(res => res.request.res.responseUrl)
         .catch(err => {
@@ -281,12 +296,23 @@ async function get_real_id(url){
         });
 }
 
+async function get_first_video(url){
+    return axios({
+        method: 'get',
+        url: url
+    })
+    .then(res => {
+        const root = parse(res.data);
+        return root.querySelector('.tiktok-yz6ijl-DivWrapper').firstChild.getAttribute('href');
+    }).catch(err => console.log(`get_first_video(${url})|Somehow failed to get first video...`));
+}
+
 async function handle_link(url){
     if (url.split(' ').length > 1) return;
     if (!url.includes('tiktok')) return;
     if (url.includes('vt.tiktok.com')) url = await get_real_id(url);
     if (url.includes('vm.tiktok.com')) url = await get_real_id(url);
-
+    if (url.includes('/music/')) { url = await get_first_video(url); var song = true };
     const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=)([\d]*)/gm;
 
     let videoId = url.split(re)[3];
@@ -349,7 +375,14 @@ async function handle_link(url){
         urls: res.data.aweme_detail?.video.play_addr.url_list,
         cover: res.data.aweme_detail?.video.cover.url_list[0],
         origin_url: res.data.aweme_detail?.share_info.share_url,
-        data_size: res.data.aweme_detail?.video.play_addr.data_size
+        data_size: res.data.aweme_detail?.video.play_addr.data_size,
+        song_only: song ? {
+            url: res.data.aweme_detail.music.play_url.uri,
+            duration: res.data.aweme_detail.music.duration,
+            title: res.data.aweme_detail.music.title,
+            author: res.data.aweme_detail.music.owner_handle.length && res.data.aweme_detail.music.owner_handle.length !== 0 < res.data.aweme_detail.music.author.length ? res.data.aweme_detail.music.owner_handle : res.data.aweme_detail.music.author,
+            cover: res.data.aweme_detail.music.cover_thumb.url_list[2]	
+        } : undefined
     };
 }
 
