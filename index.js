@@ -330,8 +330,6 @@ async function handle_link(url){
     //     console.log(element.display_image.url_list[1]);
     // });
 
-    console.log(res.data.aweme_list[0].video.play_addr.url_list);
-
     if (res?.data.aweme_list[0] === undefined || res?.data.aweme_list[0] === null) {
         console.log(`handle_link(${url})|failed to handle api request...`);    
         return;
