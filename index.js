@@ -321,22 +321,24 @@ async function handle_link(url){
 
     let res = await axios({
         method: 'get',
-        url: `https://api16-normal-useast5.us.tiktokv.com/aweme/v1/aweme/detail/?aweme_id=${videoId}`,
+        url: `https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=${videoId}`,
     }).catch(e => console.log(e));
 
-    //console.log(res.data.aweme_detail.image_post_info.images[0].display_image.url_list[1]);
+    //console.log(res.data.aweme_list[0].image_post_info.images[0].display_image.url_list[1]);
 
-    // res.data.aweme_detail.image_post_info.images.forEach(element => {
+    // res.data.aweme_list[0].image_post_info.images.forEach(element => {
     //     console.log(element.display_image.url_list[1]);
     // });
 
-    if (res?.data.aweme_detail === undefined || res?.data.aweme_detail === null) {
+    console.log(res.data.aweme_list[0].video.play_addr.url_list);
+
+    if (res?.data.aweme_list[0] === undefined || res?.data.aweme_list[0] === null) {
         console.log(`handle_link(${url})|failed to handle api request...`);    
         return;
     }
 
-    if(res.data.aweme_detail?.image_post_info?.images) {
-        let imgs = res.data.aweme_detail.image_post_info.images.map((el) => {
+    if(res.data.aweme_list[0]?.image_post_info?.images) {
+        let imgs = res.data.aweme_list[0].image_post_info.images.map((el) => {
                 return {
                     type: 'photo',
                     media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
@@ -362,26 +364,26 @@ async function handle_link(url){
         return {
             imgs: result,
             song: {
-                url: res.data.aweme_detail.music.play_url.uri,
-                duration: res.data.aweme_detail.music.duration,
-                title: res.data.aweme_detail.music.title,
-                author: res.data.aweme_detail.music.owner_handle.length && res.data.aweme_detail.music.owner_handle.length !== 0 < res.data.aweme_detail.music.author.length ? res.data.aweme_detail.music.owner_handle : res.data.aweme_detail.music.author,
-                cover: res.data.aweme_detail.music.cover_thumb.url_list[2]	
+                url: res.data.aweme_list[0].music.play_url.uri,
+                duration: res.data.aweme_list[0].music.duration,
+                title: res.data.aweme_list[0].music.title,
+                author: res.data.aweme_list[0].music.owner_handle.length && res.data.aweme_list[0].music.owner_handle.length !== 0 < res.data.aweme_list[0].music.author.length ? res.data.aweme_list[0].music.owner_handle : res.data.aweme_list[0].music.author,
+                cover: res.data.aweme_list[0].music.cover_thumb.url_list[2]	
             }
         };
     }
 
     return {
-        urls: res.data.aweme_detail?.video.play_addr.url_list,
-        cover: res.data.aweme_detail?.video.cover.url_list[0],
-        origin_url: res.data.aweme_detail?.share_info.share_url,
-        data_size: res.data.aweme_detail?.video.play_addr.data_size,
+        urls: res.data.aweme_list[0]?.video.play_addr.url_list,
+        cover: res.data.aweme_list[0]?.video.cover.url_list[0],
+        origin_url: res.data.aweme_list[0]?.share_info.share_url,
+        data_size: res.data.aweme_list[0]?.video.play_addr.data_size,
         song_only: song ? {
-            url: res.data.aweme_detail.music.play_url.uri,
-            duration: res.data.aweme_detail.music.duration,
-            title: res.data.aweme_detail.music.title,
-            author: res.data.aweme_detail.music.owner_handle.length && res.data.aweme_detail.music.owner_handle.length !== 0 < res.data.aweme_detail.music.author.length ? res.data.aweme_detail.music.owner_handle : res.data.aweme_detail.music.author,
-            cover: res.data.aweme_detail.music.cover_thumb.url_list[2]	
+            url: res.data.aweme_list[0].music.play_url.uri,
+            duration: res.data.aweme_list[0].music.duration,
+            title: res.data.aweme_list[0].music.title,
+            author: res.data.aweme_list[0].music.owner_handle.length && res.data.aweme_list[0].music.owner_handle.length !== 0 < res.data.aweme_list[0].music.author.length ? res.data.aweme_list[0].music.owner_handle : res.data.aweme_list[0].music.author,
+            cover: res.data.aweme_list[0].music.cover_thumb.url_list[2]	
         } : undefined
     };
 }
