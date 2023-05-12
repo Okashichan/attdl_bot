@@ -312,6 +312,7 @@ async function handle_link(url){
     if (!url.includes('tiktok')) return;
     if (url.includes('vt.tiktok.com')) url = await get_real_id(url);
     if (url.includes('vm.tiktok.com')) url = await get_real_id(url);
+    if (url.includes('/t/')) url = await get_real_id(url);
     if (url.includes('/music/')) { url = await get_first_video(url); var song = true };
     const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=)([\d]*)/gm;
 
