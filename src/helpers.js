@@ -122,6 +122,8 @@ const handleYoutubeLink = async (url) => {
         }
     }).catch(e => console.log(e))
 
+    console.log(`Instagram id: ${url}`)
+
     return {
         url: res.data.data.video_formats[0].url
     }
