@@ -86,7 +86,7 @@ const handleTikTokLink = async (url) => {
     };
 }
 
-const handleInstagramLink = async (url) => {
+const handleInstagramLink = async (url, cookie) => {
     if (!url.includes('instagram')) return null
 
     let videoId = url.indexOf('reels/') !== -1
@@ -95,21 +95,26 @@ const handleInstagramLink = async (url) => {
             ? url.split('reel/')[1].split('/')[0]
             : url.split('p/')[1].split('/')[0];
 
-
     console.log(`Instagram id: ${videoId}`)
 
     let res = await axios({
         method: 'get',
         url: `https://www.instagram.com/p/${videoId}/?utm_source=ig_web_copy_link?&__a=1&__d=1`,
+        headers: {
+            Cookie: cookie
+        }
     }).catch(e => console.log(e))
 
+    // Glory to Ukraine provider
+    // return {
+    //     url: res.data.graphql.shortcode_media.video_url,
+    //     cover: res.data.graphql.shortcode_media.thumbnail_src
+    // }
     return {
-        url: res.data.graphql.shortcode_media.video_url,
-        cover: res.data.graphql.shortcode_media.thumbnail_src
+        url: res.data.items[0].video_versions[0].url,
+        cover: res.data.items[0].image_versions2.candidates[0].url
     }
-
 }
-
 
 const handleYoutubeLink = async (url) => {
     if (!url.includes('youtube')) return null

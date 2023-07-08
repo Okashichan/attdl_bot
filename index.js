@@ -6,6 +6,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
+const instagramTOKEN = process.env.INSTAGRAM_COOKIE;
 // const cachedChat = process.env.TELEGRAM_CACHED_CHAT;
 
 const urlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gm;
@@ -128,7 +129,7 @@ bot.onText(urlRe, async (msg, match) => {
             }
         case 'instagram':
             {
-                helpers.handleInstagramLink(url).then((data) => {
+                helpers.handleInstagramLink(url, instagramTOKEN).then((data) => {
                     if (data === undefined || data === null) {
                         console.log(`onText(${userMsg})|failed to handle your link...`)
                         return
