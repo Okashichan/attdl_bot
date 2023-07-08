@@ -31,7 +31,7 @@ const handleTikTokLink = async (url) => {
 
     let videoId = url.split(re)[3]
 
-    console.log(`TikTOk id: ${videoId}`)
+    console.log(`TikTok id: ${videoId}`)
 
     let res = await axios({
         method: 'get',
@@ -101,7 +101,8 @@ const handleInstagramLink = async (url, cookie) => {
         method: 'get',
         url: `https://www.instagram.com/p/${videoId}/?utm_source=ig_web_copy_link?&__a=1&__d=1`,
         headers: {
-            Cookie: cookie
+            'Cookie': cookie,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
         }
     }).catch(e => console.log(e))
 
@@ -111,8 +112,8 @@ const handleInstagramLink = async (url, cookie) => {
     //     cover: res.data.graphql.shortcode_media.thumbnail_src
     // }
     return {
-        url: res.data.items[0].video_versions[0].url,
-        cover: res.data.items[0].image_versions2.candidates[0].url
+        url: res?.data.items[0].video_versions[0].url,
+        cover: res?.data.items[0].image_versions2.candidates[0].url
     }
 }
 
@@ -127,7 +128,7 @@ const handleYoutubeLink = async (url) => {
         }
     }).catch(e => console.log(e))
 
-    console.log(`Instagram id: ${url}`)
+    console.log(`Youtube id: ${url}`)
 
     return {
         url: res.data.data.video_formats[0].url
