@@ -29,13 +29,13 @@ const handleTikTokLink = async (url) => {
 
     const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=)([\d]*)/gm
 
-    let videoId = url.split(re)[3]
+    const videoId = url.split(re)[3]
 
     console.log(`TikTok id: ${videoId}`)
 
     let res = await axios({
         method: 'get',
-        url: `https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=${videoId}`,
+        url: `https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=${videoId}`
     }).catch(e => console.log(e))
 
     if (res?.data.aweme_list[0] === undefined || res?.data.aweme_list[0] === null) {
@@ -93,7 +93,7 @@ const handleInstagramLink = async (url, cookie) => {
         ? url.split('reels/')[1].split('/')[0]
         : url.indexOf('reel/') !== -1
             ? url.split('reel/')[1].split('/')[0]
-            : url.split('p/')[1].split('/')[0];
+            : url.split('p/')[1].split('/')[0]
 
     console.log(`Instagram id: ${videoId}`)
 
@@ -112,8 +112,8 @@ const handleInstagramLink = async (url, cookie) => {
     //     cover: res.data.graphql.shortcode_media.thumbnail_src
     // }
     return {
-        url: res?.data.items[0].video_versions[0].url,
-        cover: res?.data.items[0].image_versions2.candidates[0].url
+        urls: res?.data.items[0].video_versions,
+        covers: res?.data.items[0].image_versions2.candidates
     }
 }
 
@@ -131,7 +131,7 @@ const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
 
     return {
-        url: res.data.data.video_formats[0].url
+        urls: res.data.data.video_formats
     }
 
 }

@@ -1,17 +1,16 @@
-const TelegramBot = require('node-telegram-bot-api');
-// const { parse } = require('node-html-parser');
-const helpers = require('./src/helpers');
-const locale = require('./locale');
-const axios = require('axios');
-require('dotenv').config();
+const TelegramBot = require('node-telegram-bot-api')
+const helpers = require('./src/helpers')
+const locale = require('./locale')
+const axios = require('axios')
+require('dotenv').config()
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
-const instagramTOKEN = process.env.INSTAGRAM_COOKIE;
-// const cachedChat = process.env.TELEGRAM_CACHED_CHAT;
+const token = process.env.TELEGRAM_BOT_TOKEN
+const instagramToken = process.env.INSTAGRAM_COOKIE || ''
+const cachedChat = process.env.TELEGRAM_CACHED_CHAT || ''
 
-const urlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gm;
+const urlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gm
 
-const bot = new TelegramBot(token, { polling: true, filepath: false });
+const bot = new TelegramBot(token, { polling: true, filepath: false })
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
@@ -20,7 +19,7 @@ bot.onText(/\/start/, (msg) => {
     const startText = language === 'uk' ? locale['UA'].start : locale['EN'].start;
 
     bot.sendMessage(chatId, startText);
-});
+})
 
 bot.onText(/\/help/, (msg) => {
     const chatId = msg.chat.id;
@@ -29,7 +28,7 @@ bot.onText(/\/help/, (msg) => {
     const helpText = language === 'uk' ? locale['UA'].help : locale['EN'].help;
 
     bot.sendMessage(chatId, helpText);
-});
+})
 
 bot.onText(urlRe, async (msg, match) => {
     const chatId = msg.chat.id
@@ -129,7 +128,7 @@ bot.onText(urlRe, async (msg, match) => {
             }
         case 'instagram':
             {
-                helpers.handleInstagramLink(url, instagramTOKEN).then((data) => {
+                helpers.handleInstagramLink(url, instagramToken).then((data) => {
                     if (data === undefined || data === null) {
                         console.log(`onText(${userMsg})|failed to handle your link...`)
                         return
@@ -142,7 +141,7 @@ bot.onText(urlRe, async (msg, match) => {
                             allow_sending_without_reply: true
                         }
 
-                        bot.sendVideo(chatId, data.url, sendVideoOptions).catch(async (err) => {
+                        bot.sendVideo(chatId, data.url[0].url, sendVideoOptions).catch(async (err) => {
                             console.log(err.code)
                             console.log(err.response?.body)
                         })
@@ -252,32 +251,36 @@ bot.on('inline_query', async (msg) => {
             }
         case 'instagram':
             {
-                helpers.handleInstagramLink(query)
+                helpers.handleInstagramLink(query, instagramToken)
                     .then((data) => {
                         if (data === undefined || data === null) {
                             console.log(`inline_query(${query})|failed to handle your link...`)
                         }
-                        else if (data?.url) {
-                            bot.answerInlineQuery(queryId, [{
-                                type: 'video',
-                                id: 0,
-                                video_url: data.url,
-                                thumb_url: data.cover,
-                                title: `Link 1`,
-                                mime_type: 'video/mp4',
-                                reply_markup: {
-                                    inline_keyboard: [
-                                        [{
-                                            text: 'Watch on Instagram',
-                                            url: query
-                                        }],
-                                        [{
-                                            text: 'Download',
-                                            url: data.url
-                                        }]
-                                    ]
+                        else if (data?.urls) {
+                            let results = data.urls.map((item, index) => {
+                                return {
+                                    type: 'video',
+                                    id: index,
+                                    video_url: item.url,
+                                    title: `Quality ${item.width}x${item.height}`,
+                                    thumb_url: data.covers[index].url,
+                                    mime_type: 'video/mp4',
+                                    reply_markup: {
+                                        inline_keyboard: [
+                                            [{
+                                                text: 'Watch on Instagram',
+                                                url: query
+                                            }],
+                                            [{
+                                                text: 'Download',
+                                                url: item.url
+                                            }]
+                                        ]
+                                    }
                                 }
-                            }]).catch((err) => {
+                            })
+                            console.log(results)
+                            bot.answerInlineQuery(queryId, results).catch((err) => {
                                 console.log(err.code)
                                 console.log(err.response.body)
                             })
@@ -292,29 +295,33 @@ bot.on('inline_query', async (msg) => {
                     if (data === undefined || data === null) {
                         console.log(`inline_query(${query})|failed to handle your link...`)
                     }
-                    else if (data?.url) {
-                        bot.answerInlineQuery(queryId, [{
-                            type: 'video',
-                            id: 0,
-                            video_url: data.url,
-                            thumb_url: data.url,
-                            title: `Link 1`,
-                            mime_type: 'video/mp4',
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [{
-                                        text: 'Watch on YouTube',
-                                        url: query
-                                    }],
-                                    [{
-                                        text: 'Download',
-                                        url: data.url
-                                    }]
-                                ]
+                    else if (data?.urls) {
+                        let results = data.urls.filter(item => item.url !== null).map((item, index) => {
+                            return {
+                                type: 'video',
+                                id: index,
+                                video_url: item.url,
+                                title: `Quality ${item.width}x${item.height}`,
+                                thumb_url: item.url,
+                                mime_type: 'video/mp4',
+                                reply_markup: {
+                                    inline_keyboard: [
+                                        [{
+                                            text: 'Watch on YouTube',
+                                            url: query
+                                        }],
+                                        [{
+                                            text: 'Download',
+                                            url: item.url
+                                        }]
+                                    ]
+                                }
                             }
-                        }]).catch((err) => {
-                            console.log(err.code)
-                            console.log(err.response.body)
+                        })
+
+                        bot.answerInlineQuery(queryId, results).catch((err) => {
+                            console.log(err.code);
+                            console.log(err.response.body);
                         })
                     }
                 })
