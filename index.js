@@ -134,14 +134,14 @@ bot.onText(urlRe, async (msg, match) => {
                         return
                     }
 
-                    if (data?.url) {
+                    if (data?.urls) {
                         const sendVideoOptions = {
                             reply_to_message_id: userMsgId,
                             disable_notification: true,
                             allow_sending_without_reply: true
                         }
 
-                        bot.sendVideo(chatId, data.url[0].url, sendVideoOptions).catch(async (err) => {
+                        bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions).catch(async (err) => {
                             console.log(err.code)
                             console.log(err.response?.body)
                         })
@@ -159,7 +159,7 @@ bot.onText(urlRe, async (msg, match) => {
                         allow_sending_without_reply: true
                     }
 
-                    bot.sendVideo(chatId, data.url, sendVideoOptions)
+                    bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions)
                 })
                 break
             }
