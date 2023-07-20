@@ -279,7 +279,6 @@ bot.on('inline_query', async (msg) => {
                                     }
                                 }
                             })
-                            console.log(results)
                             bot.answerInlineQuery(queryId, results).catch((err) => {
                                 console.log(err.code)
                                 console.log(err.response.body)
