@@ -121,13 +121,14 @@ const handleYoutubeLink = async (url) => {
 
     let res = await axios({
         method: 'get',
-        url: `https://cdn9.savetube.me/info?url=${url}`,
+        url: `https://cdn17.savetube.me/info?url=${url}`,
         data: {
             url: url
         }
     }).catch(e => console.log(e))
 
     console.log(`Youtube id: ${url}`)
+    console.log(res)
 
     return {
         urls: res?.data.data.video_formats

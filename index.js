@@ -165,7 +165,11 @@ bot.onText(urlRe, async (msg, match) => {
                             allow_sending_without_reply: true
                         }
 
-                        bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions)
+                        download(data.urls[0].url).then((videoBuffer) => {
+                            bot.sendVideo(chatId, videoBuffer, sendVideoOptions)
+                        })
+
+                        // bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions)
                     }
                 })
                 break
