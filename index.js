@@ -153,13 +153,20 @@ bot.onText(urlRe, async (msg, match) => {
         case 'youtube':
             {
                 helpers.handleYoutubeLink(url).then((data) => {
-                    const sendVideoOptions = {
-                        reply_to_message_id: userMsgId,
-                        disable_notification: true,
-                        allow_sending_without_reply: true
+                    if (data === undefined || data === null) {
+                        console.log(`onText(${userMsg})|failed to handle your link...`)
+                        return
                     }
 
-                    bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions)
+                    if (data?.urls) {
+                        const sendVideoOptions = {
+                            reply_to_message_id: userMsgId,
+                            disable_notification: true,
+                            allow_sending_without_reply: true
+                        }
+
+                        bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions)
+                    }
                 })
                 break
             }

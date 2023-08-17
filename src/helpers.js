@@ -15,13 +15,12 @@ const getTiktokId = async (url) => {
     })
         .then(res => res.request.res.responseUrl)
         .catch(err => {
-            console.log(`get_real_id(${url})|Somehow failed to get real id...`)
+            console.log(`getTiktokId(${url})|Somehow failed to get real id...`)
             if (err.response.status === 404) return err.request.res.responseUrl
         });
 }
 
 const handleTikTokLink = async (url) => {
-    console.log(url)
     if (!url.includes('tiktok')) return null
     if (url.includes('vt.tiktok.com')) url = await getTiktokId(url)
     if (url.includes('vm.tiktok.com')) url = await getTiktokId(url)
@@ -131,7 +130,7 @@ const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
 
     return {
-        urls: res.data.data.video_formats
+        urls: res?.data.data.video_formats
     }
 
 }
