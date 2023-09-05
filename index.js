@@ -59,7 +59,7 @@ bot.onText(urlRe, async (msg, match) => {
 
                                 if (data.data_size > 52428800) {
                                     console.log(`onText(${userMsg})|video is to big(${data.data_size} bytes)...`)
-                                    bot.sendMessage(chatId, '🐌 Sowwy onii-chan... it\'s too big for me')
+                                    bot.sendMessage(chatId, `🐌 Sowwy onii-chan... it\'s too big for me\nHowever, <a href='${data.urls[0]}'>URL</a> 👉👈`, { parse_mode: 'HTML' })
                                     return
                                 }
 
@@ -80,10 +80,9 @@ bot.onText(urlRe, async (msg, match) => {
                                     bot.sendVideo(chatId, videoBuffer, sendVideoOptions).catch(async (err) => {
                                         console.log(err.code)
                                         console.log(err.response?.body)
+                                    }).then(() => {
+                                        clearInterval(statusInterval)
                                     })
-                                        .then(() => {
-                                            clearInterval(statusInterval)
-                                        })
                                 }
                             })
                         }
