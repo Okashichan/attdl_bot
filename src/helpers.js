@@ -4,7 +4,7 @@ const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     if (link.includes('tiktok.com/music')) return 'tiktok_music'
     if (link.includes('instagram.com/reel')) return 'instagram'
-    if (link.includes('youtube.com/shorts')) return 'youtube'
+    if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
     return null
 }
 
@@ -117,7 +117,7 @@ const handleInstagramLink = async (url, cookie) => {
 }
 
 const handleYoutubeLink = async (url) => {
-    if (!url.includes('youtube')) return null;
+    // if (!url.includes('youtube')) return null
 
     let status = ''
     let data = null

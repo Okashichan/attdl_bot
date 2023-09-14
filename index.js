@@ -301,7 +301,6 @@ bot.on('inline_query', async (msg) => {
         case 'youtube':
             {
                 helpers.handleYoutubeLink(query).then((data) => {
-                    console.log(data)
                     if (data === undefined || data === null) {
                         console.log(`inline_query(${query})|failed to handle your link...`)
                     }
