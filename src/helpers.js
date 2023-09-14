@@ -117,24 +117,34 @@ const handleInstagramLink = async (url, cookie) => {
 }
 
 const handleYoutubeLink = async (url) => {
-    if (!url.includes('youtube')) return null
+    if (!url.includes('youtube')) return null;
 
-    let res = await axios({
-        method: 'get',
-        url: `https://cdn21.savetube.me/info?url=${url}`,
-        data: {
-            url: url
-        }
-    }).catch(e => console.log(e))
+    let status = ''
+    let data = null
 
     console.log(`Youtube id: ${url}`)
-    console.log(res)
 
-    return {
-        urls: res?.data.data.video_formats
+    while (status !== 'finished') {
+        const res = await axios({
+            method: 'get',
+            url: `https://hub.tiktake.net/video?url=${url.includes('https://') ? url : `https://` + url}`
+        }).catch(e => console.log(e))
+
+        status = res?.data.status
+        data = res?.data
+
+        if (status !== 'finished') {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+        }
     }
 
+    return {
+        url: data.dlUrl,
+        cover: data.videoInfo.covers[0].url,
+        title: data.videoInfo.title
+    }
 }
+
 
 module.exports = {
     getLinkType,

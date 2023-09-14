@@ -157,18 +157,18 @@ bot.onText(urlRe, async (msg, match) => {
                         return
                     }
 
-                    if (data?.urls) {
+                    if (data?.url) {
                         const sendVideoOptions = {
                             reply_to_message_id: userMsgId,
                             disable_notification: true,
                             allow_sending_without_reply: true
                         }
 
-                        download(data.urls[0].url).then((videoBuffer) => {
+                        download(data.url).then((videoBuffer) => {
                             bot.sendVideo(chatId, videoBuffer, sendVideoOptions)
                         })
 
-                        // bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions)
+                        // bot.sendVideo(chatId, data.urls.url, sendVideoOptions)
                     }
                 })
                 break
@@ -301,32 +301,31 @@ bot.on('inline_query', async (msg) => {
         case 'youtube':
             {
                 helpers.handleYoutubeLink(query).then((data) => {
+                    console.log(data)
                     if (data === undefined || data === null) {
                         console.log(`inline_query(${query})|failed to handle your link...`)
                     }
-                    else if (data?.urls) {
-                        let results = data.urls.filter(item => item.url !== null).map((item, index) => {
-                            return {
-                                type: 'video',
-                                id: index,
-                                video_url: item.url,
-                                title: `Quality ${item.width}x${item.height}`,
-                                thumb_url: item.url,
-                                mime_type: 'video/mp4',
-                                reply_markup: {
-                                    inline_keyboard: [
-                                        [{
-                                            text: 'Watch on YouTube',
-                                            url: query
-                                        }],
-                                        [{
-                                            text: 'Download',
-                                            url: item.url
-                                        }]
-                                    ]
-                                }
+                    else if (data?.url) {
+                        let results = [{
+                            type: 'video',
+                            id: 0,
+                            title: data.title,
+                            video_url: data.url,
+                            thumb_url: data.cover,
+                            mime_type: 'video/mp4',
+                            reply_markup: {
+                                inline_keyboard: [
+                                    [{
+                                        text: 'Watch on YouTube',
+                                        url: query
+                                    }],
+                                    [{
+                                        text: 'Download',
+                                        url: data.url
+                                    }]
+                                ]
                             }
-                        })
+                        }]
 
                         bot.answerInlineQuery(queryId, results).catch((err) => {
                             console.log(err.code);
