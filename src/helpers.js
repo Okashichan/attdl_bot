@@ -116,32 +116,48 @@ const handleInstagramLink = async (url, cookie) => {
     }
 }
 
+// Fallback
+// const handleYoutubeLink = async (url) => {
+//     // if (!url.includes('youtube')) return null
+
+//     let status = ''
+//     let data = null
+
+//     console.log(`Youtube id: ${url}`)
+
+//     while (status !== 'finished') {
+//         const res = await axios({
+//             method: 'get',
+//             url: `https://hub.tiktake.net/video?url=${url.includes('https://') ? url : `https://` + url}`
+//         }).catch(e => console.log(e))
+
+//         status = res?.data.status
+//         data = res?.data
+
+//         if (status !== 'finished') {
+//             await new Promise(resolve => setTimeout(resolve, 1000))
+//         }
+//     }
+
+//     return {
+//         url: data.dlUrl,
+//         cover: data.videoInfo.covers[0].url,
+//         title: data.videoInfo.title
+//     }
+// }
+
 const handleYoutubeLink = async (url) => {
-    // if (!url.includes('youtube')) return null
-
-    let status = ''
-    let data = null
-
     console.log(`Youtube id: ${url}`)
 
-    while (status !== 'finished') {
-        const res = await axios({
-            method: 'get',
-            url: `https://hub.tiktake.net/video?url=${url.includes('https://') ? url : `https://` + url}`
-        }).catch(e => console.log(e))
+    const res = await axios({
+        method: 'post',
+        url: `https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url.includes('https://') ? url : `https://` + url}`
+    }).catch(e => console.log(e))
 
-        status = res?.data.status
-        data = res?.data
-
-        if (status !== 'finished') {
-            await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-    }
+    console.log(res?.data)
 
     return {
-        url: data.dlUrl,
-        cover: data.videoInfo.covers[0].url,
-        title: data.videoInfo.title
+        url: res?.data.url,
     }
 }
 

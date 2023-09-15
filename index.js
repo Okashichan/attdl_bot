@@ -164,11 +164,13 @@ bot.onText(urlRe, async (msg, match) => {
                             allow_sending_without_reply: true
                         }
 
-                        download(data.url).then((videoBuffer) => {
-                            bot.sendVideo(chatId, videoBuffer, sendVideoOptions)
-                        })
+                        // download(data.url).then((videoBuffer) => {
+                        //     bot.sendVideo(chatId, videoBuffer, sendVideoOptions)
+                        // })
 
-                        // bot.sendVideo(chatId, data.urls.url, sendVideoOptions)
+                        console.log(data.url)
+
+                        bot.sendVideo(chatId, data.url, sendVideoOptions)
                     }
                 })
                 break
@@ -295,7 +297,6 @@ bot.on('inline_query', async (msg) => {
                             })
                         }
                     })
-
                 break
             }
         case 'youtube':
@@ -310,7 +311,8 @@ bot.on('inline_query', async (msg) => {
                             id: 0,
                             title: data.title,
                             video_url: data.url,
-                            thumb_url: data.cover,
+                            thumb_url: data.url,
+                            title: 'Link 1',
                             mime_type: 'video/mp4',
                             reply_markup: {
                                 inline_keyboard: [
