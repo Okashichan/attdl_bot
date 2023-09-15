@@ -164,13 +164,14 @@ bot.onText(urlRe, async (msg, match) => {
                             allow_sending_without_reply: true
                         }
 
-                        // download(data.url).then((videoBuffer) => {
-                        //     bot.sendVideo(chatId, videoBuffer, sendVideoOptions)
-                        // })
-
-                        console.log(data.url)
-
-                        bot.sendVideo(chatId, data.url, sendVideoOptions)
+                        bot.sendVideo(chatId, data.url, sendVideoOptions).catch(async (err) => {
+                            download(data.url).then((videoBuffer) => {
+                                bot.sendVideo(chatId, videoBuffer, sendVideoOptions).catch(async (err) => {
+                                    console.log(err.code)
+                                    console.log(err.response?.body)
+                                })
+                            })
+                        })
                     }
                 })
                 break
