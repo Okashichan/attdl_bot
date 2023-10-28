@@ -52,7 +52,7 @@ const handleTikTokLink = async (url) => {
 
         console.log(`   chunk size: ${images.length}`)
 
-        const perChunk = 9; // images limit
+        const perChunk = 9 // images limit
 
         const result = images.reduce((resultArray, item, index) => {
             const chunkIndex = Math.floor(index / perChunk)
@@ -110,9 +110,10 @@ const handleInstagramLink = async (url, cookie) => {
     //     url: res.data.graphql.shortcode_media.video_url,
     //     cover: res.data.graphql.shortcode_media.thumbnail_src
     // }
+
     return {
-        urls: res?.data.items[0].video_versions,
-        covers: res?.data.items[0].image_versions2.candidates
+        url: res?.data.graphql.shortcode_media.video_url,
+        cover: res?.data.graphql.shortcode_media.display_url
     }
 }
 
