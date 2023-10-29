@@ -1,4 +1,6 @@
 const axios = require('axios')
+const { downloadFiles } = require('./download')
+const Catbox = require('catbox.moe')
 
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
@@ -20,7 +22,17 @@ const getTiktokId = async (url) => {
         });
 }
 
-const handleTikTokLink = async (url) => {
+const uploadToCatbox = async (files) => {
+    const results = await Promise.all(files.map(async (el) => {
+        return {
+            type: 'photo',
+            media: await new Catbox.Catbox().upload(el)
+        }
+    }))
+    return results
+}
+
+const handleTikTokLink = async (url, type = 'message') => {
     if (!url.includes('tiktok')) return null
     if (url.includes('vt.tiktok.com')) url = await getTiktokId(url)
     if (url.includes('vm.tiktok.com')) url = await getTiktokId(url)
@@ -44,17 +56,26 @@ const handleTikTokLink = async (url) => {
 
     if (res.data.aweme_list[0]?.image_post_info?.images) {
         let images = res.data.aweme_list[0].image_post_info.images.map((el) => {
-            return {
-                type: 'photo',
-                media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
-            }
+            return el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
         })
 
         console.log(`   chunk size: ${images.length}`)
 
+        let urls = undefined
+        let files = await downloadFiles(images, './downloads')
+
+        if (type === 'inline') urls = await uploadToCatbox(files)
+
+        files = files.map((el) => {
+            return {
+                type: 'photo',
+                media: el
+            }
+        })
+
         const perChunk = 9 // images limit
 
-        const result = images.reduce((resultArray, item, index) => {
+        const result = files.reduce((resultArray, item, index) => {
             const chunkIndex = Math.floor(index / perChunk)
 
             if (!resultArray[chunkIndex]) {
@@ -68,6 +89,7 @@ const handleTikTokLink = async (url) => {
 
         return {
             images: result,
+            images_url: urls,
             song: {
                 url: res.data.aweme_list[0].music.play_url.uri,
                 duration: res.data.aweme_list[0].music.duration,
@@ -112,8 +134,8 @@ const handleInstagramLink = async (url, cookie) => {
     // }
 
     return {
-        url: res?.data.graphql.shortcode_media.video_url,
-        cover: res?.data.graphql.shortcode_media.display_url
+        urls: res?.data.items[0].video_versions,
+        covers: res?.data.items[0].image_versions2.candidates
     }
 }
 

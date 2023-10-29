@@ -10,7 +10,7 @@ const cachedChat = process.env.TELEGRAM_CACHED_CHAT || ''
 
 const urlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gm
 
-const bot = new TelegramBot(token, { polling: true, filepath: false })
+const bot = new TelegramBot(token, { polling: true })
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
@@ -133,14 +133,14 @@ bot.onText(urlRe, (msg, match) => {
                         return
                     }
 
-                    if (data?.url) {
+                    if (data?.urls) {
                         const sendVideoOptions = {
                             reply_to_message_id: userMsgId,
                             disable_notification: true,
                             allow_sending_without_reply: true
                         }
 
-                        bot.sendVideo(chatId, data.url, sendVideoOptions).catch(async (err) => {
+                        bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions).catch(async (err) => {
                             console.log(err.code)
                             console.log(err.response?.body)
                         })
@@ -188,7 +188,7 @@ bot.on('inline_query', async (msg) => {
     switch (helpers.getLinkType(query)) {
         case 'tiktok':
             {
-                helpers.handleTikTokLink(query)
+                helpers.handleTikTokLink(query, 'inline')
                     .then((data) => {
                         if (data === undefined || data === null) {
                             console.log(`inline_query(${query})|failed to handle your link...`)
@@ -221,8 +221,8 @@ bot.on('inline_query', async (msg) => {
                                 console.log(err.code);
                                 console.log(err.response.body);
                             })
-                        } else if (data?.images) {
-                            let results = data.images.flat(1).map((item, index) => {
+                        } else if (data?.images_url) {
+                            let results = data.images_url.flat(1).map((item, index) => {
                                 return {
                                     type: 'photo',
                                     id: index,
@@ -269,27 +269,29 @@ bot.on('inline_query', async (msg) => {
                         if (data === undefined || data === null) {
                             console.log(`inline_query(${query})|failed to handle your link...`)
                         }
-                        else if (data?.url) {
-                            let results = {
-                                type: 'video',
-                                id: 0,
-                                video_url: data.url,
-                                title: `Link 1`,
-                                thumb_url: data.cover,
-                                mime_type: 'video/mp4',
-                                reply_markup: {
-                                    inline_keyboard: [
-                                        [{
-                                            text: 'Watch on Instagram',
-                                            url: query
-                                        }],
-                                        [{
-                                            text: 'Download',
-                                            url: data.url
-                                        }]
-                                    ]
+                        else if (data?.urls) {
+                            let results = data.urls.map((item, index) => {
+                                return {
+                                    type: 'video',
+                                    id: index,
+                                    video_url: item.url,
+                                    title: `Quality ${item.width}x${item.height}`,
+                                    thumb_url: data.covers[index].url,
+                                    mime_type: 'video/mp4',
+                                    reply_markup: {
+                                        inline_keyboard: [
+                                            [{
+                                                text: 'Watch on Instagram',
+                                                url: query
+                                            }],
+                                            [{
+                                                text: 'Download',
+                                                url: item.url
+                                            }]
+                                        ]
+                                    }
                                 }
-                            }
+                            })
                             bot.answerInlineQuery(queryId, results).catch((err) => {
                                 console.log(err.code)
                                 console.log(err.response.body)
