@@ -18,8 +18,9 @@ const getTiktokId = async (url) => {
         .then(res => res.request.res.responseUrl)
         .catch(err => {
             console.log(`getTiktokId(${url})|Somehow failed to get real id...`)
-            if (err.response.status === 404) return err.request.res.responseUrl
-        });
+            if (err.response?.status === 404) return err.request.res.responseUrl
+            return "fuck"
+        })
 }
 
 const uploadToCatbox = async (files) => {
