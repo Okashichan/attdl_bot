@@ -39,9 +39,12 @@ const handleTikTokLink = async (url, type = 'message') => {
     if (url.includes('vm.tiktok.com')) url = await getTiktokId(url)
     if (url.includes('/t/')) url = await getTiktokId(url)
 
-    const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=)([\d]*)/gm
+    let videoId = ''
+    const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=|video\/)([\d]*)/gm
+    const newRe = /\/video\/(\d+)\?/
 
-    const videoId = url.split(re)[3]
+    if (!url.includes('redirect_url=')) videoId = url.split(re)[3]
+    else videoId = decodeURIComponent(url).split(re)[3]
 
     console.log(`TikTok id: ${videoId}`)
 
