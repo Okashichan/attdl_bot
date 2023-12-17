@@ -111,7 +111,8 @@ const handleTikTokLink = async (url, type = 'message') => {
     };
 }
 
-const handleInstagramLink = async (url, cookie) => {
+const handleInstagramLink = async (url) => {
+    // Should switch to self-hosted api https://github.com/riad-azz/instagram-video-downloader
     if (!url.includes('instagram')) return null
 
     let videoId = url.indexOf('reels/') !== -1
@@ -124,54 +125,13 @@ const handleInstagramLink = async (url, cookie) => {
 
     let res = await axios({
         method: 'get',
-        url: `https://www.instagram.com/p/${videoId}/?utm_source=ig_web_copy_link?&__a=1&__d=1`,
-        headers: {
-            'Cookie': cookie,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
-        }
+        url: `https://instagram-videos.vercel.app/api/video?url=https://www.instagram.com/reel/${videoId}`
     }).catch(e => console.log(e))
 
-    // Glory to Ukraine provider
-    // return {
-    //     url: res.data.graphql.shortcode_media.video_url,
-    //     cover: res.data.graphql.shortcode_media.thumbnail_src
-    // }
+    if (res.data.status !== 'success') return
 
-    return {
-        urls: res?.data.items[0].video_versions,
-        covers: res?.data.items[0].image_versions2.candidates
-    }
+    return { url: res.data.data.videoUrl }
 }
-
-// Fallback
-// const handleYoutubeLink = async (url) => {
-//     // if (!url.includes('youtube')) return null
-
-//     let status = ''
-//     let data = null
-
-//     console.log(`Youtube id: ${url}`)
-
-//     while (status !== 'finished') {
-//         const res = await axios({
-//             method: 'get',
-//             url: `https://hub.tiktake.net/video?url=${url.includes('https://') ? url : `https://` + url}`
-//         }).catch(e => console.log(e))
-
-//         status = res?.data.status
-//         data = res?.data
-
-//         if (status !== 'finished') {
-//             await new Promise(resolve => setTimeout(resolve, 1000))
-//         }
-//     }
-
-//     return {
-//         url: data.dlUrl,
-//         cover: data.videoInfo.covers[0].url,
-//         title: data.videoInfo.title
-//     }
-// }
 
 const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)

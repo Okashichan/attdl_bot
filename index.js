@@ -127,20 +127,22 @@ bot.onText(urlRe, (msg, match) => {
             }
         case 'instagram':
             {
-                helpers.handleInstagramLink(url, instagramToken).then((data) => {
+                helpers.handleInstagramLink(url).then((data) => {
                     if (data === undefined || data === null) {
                         console.log(`onText(${userMsg})|failed to handle your link...`)
                         return
                     }
 
-                    if (data?.urls) {
+                    console.log(data)
+
+                    if (data?.url) {
                         const sendVideoOptions = {
                             reply_to_message_id: userMsgId,
                             disable_notification: true,
                             allow_sending_without_reply: true
                         }
 
-                        bot.sendVideo(chatId, data.urls[0].url, sendVideoOptions).catch(async (err) => {
+                        bot.sendVideo(chatId, data.url, sendVideoOptions).catch(async (err) => {
                             console.log(err.code)
                             console.log(err.response?.body)
                         })
@@ -264,35 +266,33 @@ bot.on('inline_query', async (msg) => {
             }
         case 'instagram':
             {
-                helpers.handleInstagramLink(query, instagramToken)
+                helpers.handleInstagramLink(query)
                     .then((data) => {
                         if (data === undefined || data === null) {
                             console.log(`inline_query(${query})|failed to handle your link...`)
                         }
-                        else if (data?.urls) {
-                            let results = data.urls.map((item, index) => {
-                                return {
-                                    type: 'video',
-                                    id: index,
-                                    video_url: item.url,
-                                    title: `Quality ${item.width}x${item.height}`,
-                                    thumb_url: data.covers[index].url,
-                                    mime_type: 'video/mp4',
-                                    reply_markup: {
-                                        inline_keyboard: [
-                                            [{
-                                                text: 'Watch on Instagram',
-                                                url: query
-                                            }],
-                                            [{
-                                                text: 'Download',
-                                                url: item.url
-                                            }]
-                                        ]
-                                    }
+                        else if (data?.url) {
+
+                            bot.answerInlineQuery(queryId, [{
+                                type: 'video',
+                                id: 0,
+                                video_url: data.url,
+                                title: `Video 1`,
+                                mime_type: 'video/mp4',
+                                thumb_url: data.url,
+                                reply_markup: {
+                                    inline_keyboard: [
+                                        [{
+                                            text: 'Watch on Instagram',
+                                            url: query
+                                        }],
+                                        [{
+                                            text: 'Download',
+                                            url: data.url
+                                        }]
+                                    ]
                                 }
-                            })
-                            bot.answerInlineQuery(queryId, results).catch((err) => {
+                            }]).catch((err) => {
                                 console.log(err.code)
                                 console.log(err.response.body)
                             })
