@@ -1,5 +1,4 @@
 const axios = require('axios')
-const Catbox = require('catbox.moe')
 
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
