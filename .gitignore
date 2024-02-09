@@ -1,5 +1,7 @@
 .env
 .gitignore
+package-lock.json
 node_modules/
 downloads/
-```
+src/slideshow.js
+src/download.js

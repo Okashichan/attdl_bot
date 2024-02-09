@@ -1,5 +1,4 @@
 const axios = require('axios')
-const { downloadFiles } = require('./download')
 const Catbox = require('catbox.moe')
 
 const getLinkType = (link) => {
@@ -60,26 +59,17 @@ const handleTikTokLink = async (url, type = 'message') => {
 
     if (res.data.aweme_list[0]?.image_post_info?.images) {
         let images = res.data.aweme_list[0].image_post_info.images.map((el) => {
-            return el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
+            return {
+                type: 'photo',
+                media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
+            }
         })
 
         console.log(`   chunk size: ${images.length}`)
 
-        let urls = undefined
-        let files = await downloadFiles(images, './downloads')
-
-        if (type === 'inline') urls = await uploadToCatbox(files)
-
-        files = files.map((el) => {
-            return {
-                type: 'photo',
-                media: el
-            }
-        })
-
         const perChunk = 9 // images limit
 
-        const result = files.reduce((resultArray, item, index) => {
+        const result = images.reduce((resultArray, item, index) => {
             const chunkIndex = Math.floor(index / perChunk)
 
             if (!resultArray[chunkIndex]) {
@@ -93,7 +83,6 @@ const handleTikTokLink = async (url, type = 'message') => {
 
         return {
             images: result,
-            images_url: urls,
             song: {
                 url: res.data.aweme_list[0].music.play_url.uri,
                 duration: res.data.aweme_list[0].music.duration,
