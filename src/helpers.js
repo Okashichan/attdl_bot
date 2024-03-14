@@ -48,7 +48,7 @@ const handleTikTokLink = async (url, type = 'message') => {
 
     let res = await axios({
         method: 'get',
-        url: `https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=${videoId}`
+        url: `https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id=${videoId}`
     }).catch(e => console.log(e))
 
     if (res?.data.aweme_list[0] === undefined || res?.data.aweme_list[0] === null) {
