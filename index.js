@@ -213,7 +213,8 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
             download(data.url).then((videoBuffer) => {
                 bot.sendVideo(chatId, videoBuffer, {
                     ...sendOptions,
-                    reply_to_message_id: userMsgId
+                    reply_to_message_id: userMsgId,
+                    caption: data.title
                 }).catch(async (err) => {
                     console.log(err.code)
                     console.log(err.response?.body)
@@ -341,10 +342,10 @@ async function handleYoutubeInlineLogic(query, queryId) {
         let results = [{
             type: 'video',
             id: 0,
-            title: data.title,
+            caption: data.title,
             video_url: data.url,
             thumb_url: data.url,
-            title: 'Link 1',
+            title: data.title,
             mime_type: 'video/mp4',
             reply_markup: {
                 inline_keyboard: [

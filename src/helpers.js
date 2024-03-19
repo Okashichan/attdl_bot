@@ -129,10 +129,9 @@ const handleYoutubeLink = async (url) => {
         url: `https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url.includes('https://') ? url : `https://` + url}`
     }).catch(e => console.log(e))
 
-    console.log(res?.data)
-
     return {
         url: res?.data.url,
+        title: res?.data.title,
     }
 }
 
