@@ -205,10 +205,13 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
         return
     }
 
+    console.log(data)
+
     if (data?.url) {
         bot.sendVideo(chatId, data.url, {
             ...sendOptions,
-            reply_to_message_id: userMsgId
+            reply_to_message_id: userMsgId,
+            caption: data.title
         }).catch(async (err) => {
             download(data.url).then((videoBuffer) => {
                 bot.sendVideo(chatId, videoBuffer, {
