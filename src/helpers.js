@@ -44,59 +44,69 @@ const handleTikTokLink = async (url, type = 'message') => {
     if (!url.includes('redirect_url=')) videoId = url.split(re)[3]
     else videoId = decodeURIComponent(url).split(re)[3]
 
-    console.log(`TikTok id: ${videoId}`)
+    url = url.includes('https://') ? url : `https://${url}`
+
+    console.log(`TikTok id: ${url}`)
 
     let res = await axios({
         method: 'get',
-        url: `https://api22-normal-c-useast2a.tiktokv.com/aweme/v1/feed/?aweme_id=${videoId}`
+        url: `https://tiktokjs-downloader.vercel.app/api/v1/musicaldown?server=musicaldown&type=html&url=${url}`
     }).catch(e => console.log(e))
 
-    if (res?.data.aweme_list[0] === undefined || res?.data.aweme_list[0] === null) {
-        console.log(`handleTikTokLink(${url})|failed to handle api request...`)
-        return
-    }
-
-    if (res.data.aweme_list[0]?.image_post_info?.images) {
-        let images = res.data.aweme_list[0].image_post_info.images.map((el) => {
-            return {
-                type: 'photo',
-                media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
-            }
-        })
-
-        console.log(`   chunk size: ${images.length}`)
-
-        const perChunk = 9 // images limit
-
-        const result = images.reduce((resultArray, item, index) => {
-            const chunkIndex = Math.floor(index / perChunk)
-
-            if (!resultArray[chunkIndex]) {
-                resultArray[chunkIndex] = []
-            }
-
-            resultArray[chunkIndex].push(item)
-
-            return resultArray
-        }, [])
-
-        return {
-            images: result,
-            song: {
-                url: res.data.aweme_list[0].music.play_url.uri,
-                duration: res.data.aweme_list[0].music.duration,
-                title: res.data.aweme_list[0].music.title,
-                author: res.data.aweme_list[0].music.owner_handle.length && res.data.aweme_list[0].music.owner_handle.length !== 0 < res.data.aweme_list[0].music.author.length ? res.data.aweme_list[0].music.owner_handle : res.data.aweme_list[0].music.author
-            }
-        }
-    }
+    if (res?.data?.status !== 'success') return
 
     return {
-        urls: res.data.aweme_list[0]?.video.play_addr.url_list,
-        cover: res.data.aweme_list[0]?.video.cover.url_list[0],
-        origin_url: res.data.aweme_list[0]?.share_info.share_url,
-        data_size: res.data.aweme_list[0]?.video.play_addr.data_size
-    };
+        urls: res.data.videos,
+        origin_url: url
+    }
+
+    // Should return when API issues fixed
+    // if (res?.data.aweme_list[0] === undefined || res?.data.aweme_list[0] === null) {
+    //     console.log(`handleTikTokLink(${url})|failed to handle api request...`)
+    //     return
+    // }
+
+    // if (res.data.aweme_list[0]?.image_post_info?.images) {
+    //     let images = res.data.aweme_list[0].image_post_info.images.map((el) => {
+    //         return {
+    //             type: 'photo',
+    //             media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
+    //         }
+    //     })
+
+    //     console.log(`   chunk size: ${images.length}`)
+
+    //     const perChunk = 9 // images limit
+
+    //     const result = images.reduce((resultArray, item, index) => {
+    //         const chunkIndex = Math.floor(index / perChunk)
+
+    //         if (!resultArray[chunkIndex]) {
+    //             resultArray[chunkIndex] = []
+    //         }
+
+    //         resultArray[chunkIndex].push(item)
+
+    //         return resultArray
+    //     }, [])
+
+    //     return {
+    //         images: result,
+    //         song: {
+    //             url: res.data.aweme_list[0].music.play_url.uri,
+    //             duration: res.data.aweme_list[0].music.duration,
+    //             title: res.data.aweme_list[0].music.title,
+    //             author: res.data.aweme_list[0].music.owner_handle.length && res.data.aweme_list[0].music.owner_handle.length !== 0 < res.data.aweme_list[0].music.author.length ? res.data.aweme_list[0].music.owner_handle : res.data.aweme_list[0].music.author
+    //         }
+    //     }
+    // }
+
+    // return {
+    //     urls: res.data.aweme_list[0]?.video.play_addr.url_list,
+    //     cover: res.data.aweme_list[0]?.video.cover.url_list[0],
+    //     origin_url: res.data.aweme_list[0]?.share_info.share_url,
+    //     data_size: res.data.aweme_list[0]?.video.play_addr.data_size
+    // };
 }
 
 const handleInstagramLink = async (url) => {
