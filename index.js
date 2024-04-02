@@ -1,13 +1,11 @@
-const TelegramBot = require('node-telegram-bot-api')
-const { download } = require('./src/download').default
-const helpers = require('./src/helpers')
-const locale = require('./locale')
+import TelegramBot from 'node-telegram-bot-api'
+import { download } from './src/download'
+import helpers from './src/helpers'
+import locale from './locale'
 
-require('dotenv').config()
-
-const token = process.env.TELEGRAM_BOT_TOKEN
-const instagramToken = process.env.INSTAGRAM_COOKIE || ''
-const cachedChat = process.env.TELEGRAM_CACHED_CHAT || ''
+const token = Bun.env.TELEGRAM_BOT_TOKEN
+const instagramToken = Bun.env.INSTAGRAM_COOKIE || ''
+const cachedChat = Bun.env.TELEGRAM_CACHED_CHAT || ''
 
 const urlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gm
 
@@ -65,8 +63,8 @@ bot.onText(urlRe, async (msg, match) => {
 })
 
 bot.on('inline_query', async (msg) => {
-    let queryId = msg.id;
-    let query = msg.query;
+    let queryId = msg.id
+    let query = msg.query
 
     switch (helpers.getLinkType(query)) {
         case 'tiktok':
@@ -119,9 +117,9 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
             console.log(`onText(${userMsg})|Trying to download video...`)
 
             if (err.response?.body.error_code === 400) {
-                // bot.sendMessage(chatId, '🐌 I\'m Fast as Fuck Boi');
+                // bot.sendMessage(chatId, '🐌 I\'m Fast as Fuck Boi')
 
-                let videoBuffer = await download(data.urls[0]);
+                let videoBuffer = await download(data.urls[0])
                 if (videoBuffer === undefined || videoBuffer === null) return
 
                 bot.sendChatAction(chatId, 'upload_video')
@@ -158,7 +156,7 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
 
             if (index === data.images.length - 1) break
 
-            await new Promise(r => setTimeout(r, interval))
+            await Bun.sleep(interval)
         }
 
         bot.sendChatAction(chatId, 'upload_audio')
@@ -260,8 +258,8 @@ async function handleTikTokInlineLogic(query, queryId) {
         })
 
         bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code);
-            console.log(err.response.body);
+            console.log(err.code)
+            console.log(err.response.body)
         })
     } else if (data?.images) {
         let results = data.images.flat(1).map((item, index) => {
@@ -367,8 +365,8 @@ async function handleYoutubeInlineLogic(query, queryId) {
         }]
 
         bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code);
-            console.log(err.response.body);
+            console.log(err.code)
+            console.log(err.response.body)
         })
     }
 }

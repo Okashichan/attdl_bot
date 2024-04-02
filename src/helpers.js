@@ -109,7 +109,7 @@ const handleTikTokLink = async (url, type = 'message') => {
         cover: res.aweme_list[0]?.video.cover.url_list[0],
         origin_url: res.aweme_list[0]?.share_info.share_url,
         data_size: res.aweme_list[0]?.video.play_addr_size
-    };
+    }
 }
 
 const handleInstagramLink = async (url) => {
@@ -148,7 +148,7 @@ const handleYoutubeLink = async (url) => {
 }
 
 
-module.exports = {
+export default {
     getLinkType,
     handleTikTokLink,
     handleInstagramLink,

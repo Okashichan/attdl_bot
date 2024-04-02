@@ -30,9 +30,9 @@ const downloadFile = async (url, downloadDir) => {
         writer.on('finish', () => {
             resolve(downloadPath)
             setTimeout(() => {
-                cleanupFile(downloadPath);
+                cleanupFile(downloadPath)
             }, 5 * 60 * 1000)
-        });
+        })
         writer.on('error', reject)
     })
 }
@@ -64,7 +64,7 @@ const download = async (url) => {
     return Buffer.from(res, 'utf-8')
 }
 
-export default {
+export {
     downloadFiles,
     download
 }
