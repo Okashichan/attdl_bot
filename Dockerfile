@@ -1,10 +1,10 @@
-FROM node:lts-alpine
+FROM oven/bun:latest
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-RUN npm install
+RUN bun install
 
 COPY . .
 
-CMD [ "node", "index.js" ]
+CMD [ "bun", "index.js" ]

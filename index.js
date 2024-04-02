@@ -2,7 +2,6 @@ const TelegramBot = require('node-telegram-bot-api')
 const { download } = require('./src/download')
 const helpers = require('./src/helpers')
 const locale = require('./locale')
-const axios = require('axios')
 
 require('dotenv').config()
 

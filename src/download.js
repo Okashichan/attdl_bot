@@ -1,4 +1,3 @@
-const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
@@ -15,8 +14,7 @@ const cleanupFile = (filePath) => {
 }
 
 const downloadFile = async (url, downloadDir) => {
-    const response = await axios({
-        method: 'get',
+    const response = await fetch({
         url: url,
         responseType: 'stream',
     })
@@ -59,10 +57,11 @@ const downloadFiles = async (urlList, downloadDir) => {
 }
 
 const download = async (url) => {
-    let res = await axios.get(url, { responseType: 'arraybuffer' })
+    let res = await fetch(url)
+        .then((res) => res.arrayBuffer())
         .catch((err) => console.log(`download(${url})|failed to download video...`))
 
-    return Buffer.from(res.data, 'utf-8')
+    return Buffer.from(res, 'utf-8')
 }
 
 module.exports = {

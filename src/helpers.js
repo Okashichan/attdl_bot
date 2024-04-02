@@ -1,5 +1,3 @@
-const axios = require('axios')
-
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     if (link.includes('tiktok.com/music')) return 'tiktok_music'
@@ -9,16 +7,10 @@ const getLinkType = (link) => {
 }
 
 const getTiktokId = async (url) => {
-    return axios({
-        method: 'get',
-        url: url.includes('https://') ? url : `https://${url}`
-    })
-        .then(res => res.request.res.responseUrl)
-        .catch(err => {
-            console.log(`getTiktokId(${url})|Somehow failed to get real id...`)
-            if (err.response?.status === 404) return err.request.res.responseUrl
-            return "fuck"
-        })
+    const response = await fetch(url.includes('https://') ? url : `https://${url}`)
+    const responceUrl = response?.url ? response.url : "fuck"
+
+    return responceUrl
 }
 
 const uploadToCatbox = async (files) => {
@@ -48,15 +40,14 @@ const handleTikTokLink = async (url, type = 'message') => {
 
     console.log(`TikTok id: ${url}`)
 
-    let res = await axios({
-        method: 'get',
-        url: `https://tiktokjs-downloader.vercel.app/api/v1/musicaldown?server=musicaldown&type=html&url=${url}`
-    }).catch(e => console.log(e))
+    let res = await fetch(`https://tiktokjs-downloader.vercel.app/api/v1/musicaldown?server=musicaldown&type=html&url=${url}`)
+        .then(res => res.json())
+        .catch(e => console.log(e))
 
-    if (res?.data?.status !== 'success') return
+    if (res?.status !== 'success') return
 
     return {
-        urls: res.data.videos,
+        urls: res.videos,
         origin_url: url
     }
 
@@ -121,27 +112,26 @@ const handleInstagramLink = async (url) => {
 
     console.log(`Instagram id: ${videoId}`)
 
-    let res = await axios({
-        method: 'get',
-        url: `https://instagram-videos.vercel.app/api/video?url=https://www.instagram.com/reel/${videoId}`
-    }).catch(e => console.log(e))
+    let res = await fetch(`https://instagram-videos.vercel.app/api/video?url=https://www.instagram.com/reel/${videoId}`)
+        .then(res => res.json())
+        .catch(e => console.log(e))
 
-    if (res.data.status !== 'success') return
+    if (res.status !== 'success') return
 
-    return { url: res.data.data.videoUrl }
+    return { url: res.data.videoUrl }
 }
 
 const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
 
-    const res = await axios({
-        method: 'post',
-        url: `https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url.includes('https://') ? url : `https://` + url}`
-    }).catch(e => console.log(e))
+    const res = await fetch(`https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url.includes('https://') ? url : `https://` + url}`,
+        { method: 'POST' })
+        .then(res => res.json())
+        .catch(e => console.log(e))
 
     return {
-        url: res?.data.url,
-        title: res?.data.title,
+        url: res?.url,
+        title: res?.title,
     }
 }
 
