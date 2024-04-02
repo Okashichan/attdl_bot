@@ -13,15 +13,15 @@ const getTiktokId = async (url) => {
     return responceUrl
 }
 
-const uploadToCatbox = async (files) => {
-    const results = await Promise.all(files.map(async (el) => {
-        return {
-            type: 'photo',
-            media: await new Catbox.Catbox().upload(el)
-        }
-    }))
-    return results
-}
+// const uploadToCatbox = async (files) => {
+//     const results = await Promise.all(files.map(async (el) => {
+//         return {
+//             type: 'photo',
+//             media: await new Catbox.Catbox().upload(el)
+//         }
+//     }))
+//     return results
+// }
 
 const handleTikTokLink = async (url, type = 'message') => {
     if (!url.includes('tiktok')) return null
@@ -38,66 +38,78 @@ const handleTikTokLink = async (url, type = 'message') => {
 
     url = url.includes('https://') ? url : `https://${url}`
 
-    console.log(`TikTok id: ${url}`)
+    console.log(`TikTok id: ${videoId}`)
 
-    let res = await fetch(`https://tiktokjs-downloader.vercel.app/api/v1/musicaldown?server=musicaldown&type=html&url=${url}`)
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36'
+    }
+
+    const params = new URLSearchParams({
+        "iid": '7318518857994389254',
+        "device_id": Math.floor(Math.random() * (7351147085025500000 - 7250000000000000000 + 1)) + 7250000000000000000,
+        "version_code": "1337",
+        "aweme_id": videoId
+    })
+
+    let res = await fetch(`https://api22-normal-c-alisg.tiktokv.com/aweme/v1/feed/?${params.toString()}`,
+        { headers })
         .then(res => res.json())
         .catch(e => console.log(e))
 
-    if (res?.status !== 'success') return
-
-    return {
-        urls: res.videos,
-        origin_url: url
-    }
-
-    // Should return when API issues fixed
-    // if (res?.data.aweme_list[0] === undefined || res?.data.aweme_list[0] === null) {
-    //     console.log(`handleTikTokLink(${url})|failed to handle api request...`)
-    //     return
-    // }
-
-    // if (res.data.aweme_list[0]?.image_post_info?.images) {
-    //     let images = res.data.aweme_list[0].image_post_info.images.map((el) => {
-    //         return {
-    //             type: 'photo',
-    //             media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
-    //         }
-    //     })
-
-    //     console.log(`   chunk size: ${images.length}`)
-
-    //     const perChunk = 9 // images limit
-
-    //     const result = images.reduce((resultArray, item, index) => {
-    //         const chunkIndex = Math.floor(index / perChunk)
-
-    //         if (!resultArray[chunkIndex]) {
-    //             resultArray[chunkIndex] = []
-    //         }
-
-    //         resultArray[chunkIndex].push(item)
-
-    //         return resultArray
-    //     }, [])
-
-    //     return {
-    //         images: result,
-    //         song: {
-    //             url: res.data.aweme_list[0].music.play_url.uri,
-    //             duration: res.data.aweme_list[0].music.duration,
-    //             title: res.data.aweme_list[0].music.title,
-    //             author: res.data.aweme_list[0].music.owner_handle.length && res.data.aweme_list[0].music.owner_handle.length !== 0 < res.data.aweme_list[0].music.author.length ? res.data.aweme_list[0].music.owner_handle : res.data.aweme_list[0].music.author
-    //         }
-    //     }
-    // }
+    // Should return when API broken again
+    // if (res?.status !== 'success') return
 
     // return {
-    //     urls: res.data.aweme_list[0]?.video.play_addr.url_list,
-    //     cover: res.data.aweme_list[0]?.video.cover.url_list[0],
-    //     origin_url: res.data.aweme_list[0]?.share_info.share_url,
-    //     data_size: res.data.aweme_list[0]?.video.play_addr.data_size
-    // };
+    //     urls: res.videos,
+    //     origin_url: url
+    // }
+
+    if (res?.aweme_list[0] === undefined || res?.aweme_list[0] === null) {
+        console.log(`handleTikTokLink(${url})|failed to handle api request...`)
+        return
+    }
+
+    if (res.aweme_list[0]?.image_post_info?.images) {
+        let images = res.aweme_list[0].image_post_info.images.map((el) => {
+            return {
+                type: 'photo',
+                media: el.display_image.url_list[1].includes('.webp') ? el.display_image.url_list[2] : el.display_image.url_list[1]
+            }
+        })
+
+        console.log(`   chunk size: ${images.length}`)
+
+        const perChunk = 9 // images limit
+
+        const result = images.reduce((resultArray, item, index) => {
+            const chunkIndex = Math.floor(index / perChunk)
+
+            if (!resultArray[chunkIndex]) {
+                resultArray[chunkIndex] = []
+            }
+
+            resultArray[chunkIndex].push(item)
+
+            return resultArray
+        }, [])
+
+        return {
+            images: result,
+            song: {
+                url: res.aweme_list[0].music.play_url.uri,
+                duration: res.aweme_list[0].music.duration,
+                title: res.aweme_list[0].music.title,
+                author: res.aweme_list[0].music.owner_handle.length && res.aweme_list[0].music.owner_handle.length !== 0 < res.aweme_list[0].music.author.length ? res.aweme_list[0].music.owner_handle : res.aweme_list[0].music.author
+            }
+        }
+    }
+
+    return {
+        urls: res.aweme_list[0]?.video.play_addr.url_list,
+        cover: res.aweme_list[0]?.video.cover.url_list[0],
+        origin_url: res.aweme_list[0]?.share_info.share_url,
+        data_size: res.aweme_list[0]?.video.play_addr_size
+    };
 }
 
 const handleInstagramLink = async (url) => {
@@ -118,7 +130,7 @@ const handleInstagramLink = async (url) => {
 
     if (res.status !== 'success') return
 
-    return { url: res.data.videoUrl }
+    return { url: res.videoUrl }
 }
 
 const handleYoutubeLink = async (url) => {

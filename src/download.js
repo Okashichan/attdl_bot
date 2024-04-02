@@ -1,14 +1,14 @@
-const fs = require('fs')
-const path = require('path')
-const crypto = require('crypto')
+import { unlink, createWriteStream, existsSync, mkdirSync } from 'fs'
+import { join } from 'path'
+import { randomBytes } from 'crypto'
 
 const generateRandomFileName = (extension) => {
-    const randomString = crypto.randomBytes(6).toString('hex')
+    const randomString = randomBytes(6).toString('hex')
     return `${randomString}${extension}`
 }
 
 const cleanupFile = (filePath) => {
-    fs.unlink(filePath, (err) => {
+    unlink(filePath, (err) => {
         if (err) console.error(`Failed to delete file: ${err}`)
     })
 }
@@ -21,9 +21,9 @@ const downloadFile = async (url, downloadDir) => {
 
     const fileExtension = url.includes('.webp') ? '.webp' : '.jpg'
     const randomFileName = generateRandomFileName(fileExtension)
-    const downloadPath = path.join(downloadDir, randomFileName)
+    const downloadPath = join(downloadDir, randomFileName)
 
-    const writer = fs.createWriteStream(downloadPath)
+    const writer = createWriteStream(downloadPath)
 
     return new Promise((resolve, reject) => {
         response.data.pipe(writer)
@@ -40,8 +40,8 @@ const downloadFile = async (url, downloadDir) => {
 const downloadFiles = async (urlList, downloadDir) => {
     const downloadedFilePaths = []
 
-    if (!fs.existsSync(downloadDir)) {
-        fs.mkdirSync(downloadDir, { recursive: true })
+    if (!existsSync(downloadDir)) {
+        mkdirSync(downloadDir, { recursive: true })
     }
 
     for (const url of urlList) {
@@ -64,7 +64,7 @@ const download = async (url) => {
     return Buffer.from(res, 'utf-8')
 }
 
-module.exports = {
+export default {
     downloadFiles,
     download
 }

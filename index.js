@@ -1,5 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api')
-const { download } = require('./src/download')
+const { download } = require('./src/download').default
 const helpers = require('./src/helpers')
 const locale = require('./locale')
 
@@ -103,18 +103,18 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
     }
 
     if (data?.urls) {
-        bot.sendVideo(chatId, data.urls[1], {
+        bot.sendVideo(chatId, data.urls[0], {
             ...sendOptions,
             reply_to_message_id: userMsgId,
         }).catch(async (err) => {
             console.log(err.code)
             console.log(err.response?.body)
 
-            // if (data.data_size > 52428800) {
-            //     console.log(`onText(${userMsg})|video is to big(${data.data_size} bytes)...`)
-            //     bot.sendMessage(chatId, `🐌 Sowwy onii-chan... it\'s too big for me\nHowever, <a href='${data.urls[0]}'>URL</a> 👉👈`, { parse_mode: 'HTML' })
-            //     return
-            // }
+            if (data.data_size > 52428800) {
+                console.log(`onText(${userMsg})|video is to big(${data.data_size} bytes)...`)
+                bot.sendMessage(chatId, `🐌 Sowwy onii-chan... it\'s too big for me\nHowever, <a href='${data.urls[0]}'>URL</a> 👉👈`, { parse_mode: 'HTML' })
+                return
+            }
 
             console.log(`onText(${userMsg})|Trying to download video...`)
 
