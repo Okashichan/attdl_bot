@@ -147,7 +147,7 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
 
         for (const [index, el] of data.images.entries()) {
             console.log(`       part #${index + 1}; size=${el.length}; timeout=${interval * index}`)
-            await bot.sendChatAction(chatId, 'upload_photo')
+            bot.sendChatAction(chatId, 'upload_photo')
             await bot.sendMediaGroup(chatId, el, {
                 ...sendOptions,
                 reply_to_message_id: userMsgId
@@ -155,10 +155,13 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
                 console.log(err.code)
                 console.log(err.response?.body)
             })
+
+            if (index === data.images.length - 1) break
+
             await new Promise(r => setTimeout(r, interval))
         }
 
-        await bot.sendChatAction(chatId, 'upload_audio')
+        bot.sendChatAction(chatId, 'upload_audio')
 
         let audioBuffer = await download(data.song.url)
 
