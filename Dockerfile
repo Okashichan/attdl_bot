@@ -7,4 +7,4 @@ RUN bun install
 
 COPY . .
 
-CMD [ "bun", "index.js" ]
+CMD [ "bun", "run" ,"index.js" ]
