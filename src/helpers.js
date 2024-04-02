@@ -94,6 +94,7 @@ const handleTikTokLink = async (url, type = 'message') => {
         }, [])
 
         return {
+            title: res.aweme_list[0].desc,
             images: result,
             song: {
                 url: res.aweme_list[0].music.play_url.uri,
@@ -105,6 +106,7 @@ const handleTikTokLink = async (url, type = 'message') => {
     }
 
     return {
+        title: res.aweme_list[0]?.desc,
         urls: res.aweme_list[0]?.video.play_addr.url_list,
         cover: res.aweme_list[0]?.video.cover.url_list[0],
         origin_url: res.aweme_list[0]?.share_info.share_url,

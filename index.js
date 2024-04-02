@@ -103,6 +103,7 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
     if (data?.urls) {
         bot.sendVideo(chatId, data.urls[0], {
             ...sendOptions,
+            caption: data.title,
             reply_to_message_id: userMsgId,
         }).catch(async (err) => {
             console.log(err.code)
@@ -130,6 +131,7 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
 
                 bot.sendVideo(chatId, videoBuffer, {
                     ...sendOptions,
+                    caption: data.title,
                     reply_to_message_id: userMsgId
                 }).catch(async (err) => {
                     console.log(err.code)
@@ -239,6 +241,7 @@ async function handleTikTokInlineLogic(query, queryId) {
                 type: 'video',
                 id: index,
                 video_url: item,
+                caption: data.title,
                 title: `Link ${index + 1}`,
                 thumb_url: data.cover,
                 mime_type: 'video/mp4',
@@ -266,6 +269,7 @@ async function handleTikTokInlineLogic(query, queryId) {
             return {
                 type: 'photo',
                 id: index,
+                caption: data.title,
                 photo_url: item.media,
                 thumb_url: item.media,
                 reply_markup: {
