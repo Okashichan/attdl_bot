@@ -132,7 +132,7 @@ const handleInstagramLink = async (url) => {
 
     if (res.status !== 'success') return
 
-    return { url: res.videoUrl }
+    return { url: res.data.videoUrl }
 }
 
 const handleYoutubeLink = async (url) => {
