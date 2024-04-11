@@ -1,8 +1,11 @@
+import { $ } from "bun"
+
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     if (link.includes('tiktok.com/music')) return 'tiktok_music'
     if (link.includes('instagram.com/reel')) return 'instagram'
     if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
+    if (link.includes('reddit.com')) return 'reddit'
     return null
 }
 
@@ -12,16 +15,6 @@ const getTiktokId = async (url) => {
 
     return responceUrl
 }
-
-// const uploadToCatbox = async (files) => {
-//     const results = await Promise.all(files.map(async (el) => {
-//         return {
-//             type: 'photo',
-//             media: await new Catbox.Catbox().upload(el)
-//         }
-//     }))
-//     return results
-// }
 
 const handleTikTokLink = async (url, type = 'message') => {
     if (!url.includes('tiktok')) return null
@@ -115,24 +108,34 @@ const handleTikTokLink = async (url, type = 'message') => {
 }
 
 const handleInstagramLink = async (url) => {
-    // Should switch to self-hosted api https://github.com/riad-azz/instagram-video-downloader
     if (!url.includes('instagram')) return null
 
-    let videoId = url.indexOf('reels/') !== -1
-        ? url.split('reels/')[1].split('/')[0]
-        : url.indexOf('reel/') !== -1
-            ? url.split('reel/')[1].split('/')[0]
-            : url.split('p/')[1].split('/')[0]
+    // let videoId = url.indexOf('reels/') !== -1
+    //     ? url.split('reels/')[1].split('/')[0]
+    //     : url.indexOf('reel/') !== -1
+    //         ? url.split('reel/')[1].split('/')[0]
+    //         : url.split('p/')[1].split('/')[0]
 
-    console.log(`Instagram id: ${videoId}`)
+    const res = await $`yt-dlp --dump-json ${url}`.json()
 
-    let res = await fetch(`https://instagram-videos.vercel.app/api/video?url=https://www.instagram.com/reel/${videoId}`)
-        .then(res => res.json())
-        .catch(e => console.log(e))
+    return { url: res.url, title: res.title }
+}
 
-    if (res.status !== 'success') return
+const handleRedditLink = async (url) => {
+    if (!url.includes('reddit')) return null
 
-    return { url: res.data.videoUrl }
+    console.log(`Reddit id: ${url}`)
+
+    const res = (await $`gallery-dl --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} ${url}`.text())
+        .split(/\r?\n/).filter(line => line.trim() !== "")
+        .map(url => {
+            return {
+                type: "photo",
+                media: url
+            }
+        })
+
+    return { images: res }
 }
 
 const handleYoutubeLink = async (url) => {
@@ -154,5 +157,6 @@ export default {
     getLinkType,
     handleTikTokLink,
     handleInstagramLink,
-    handleYoutubeLink
+    handleYoutubeLink,
+    handleRedditLink
 }

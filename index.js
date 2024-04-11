@@ -2,6 +2,7 @@ import TelegramBot from 'node-telegram-bot-api'
 import { download } from './src/download'
 import helpers from './src/helpers'
 import locale from './locale'
+import { $ } from 'bun'
 
 const token = Bun.env.TELEGRAM_BOT_TOKEN
 const instagramToken = Bun.env.INSTAGRAM_COOKIE || ''
@@ -15,6 +16,10 @@ const sendOptions = {
 }
 
 const bot = new TelegramBot(token, { polling: true })
+
+// bruh
+await $`gallery-dl --range 1 --get-url 'https://www.reddit.com/'`
+await $`gallery-dl --range 1 --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} 'https://www.reddit.com/'`
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id
@@ -55,6 +60,11 @@ bot.onText(urlRe, async (msg, match) => {
         case 'youtube':
             {
                 handleYoutubeLogic(url, chatId, userMsgId, userMsg)
+                break
+            }
+        case 'reddit':
+            {
+                handleRedditLogic(url, chatId, userMsgId, userMsg, chatType)
                 break
             }
         default:
@@ -225,6 +235,26 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
                     console.log(err.response?.body)
                 })
             })
+        })
+    }
+}
+
+async function handleRedditLogic(url, chatId, userMsgId, userMsg, chatType) {
+    const data = await helpers.handleRedditLink(url)
+
+    if (data === undefined || data === null) {
+        console.log(`onText(${userMsg})|failed to handle your link...`)
+        return
+    }
+
+    if (data?.images) {
+        bot.sendChatAction(chatId, 'upload_photo')
+        await bot.sendMediaGroup(chatId, data.images, {
+            ...sendOptions,
+            reply_to_message_id: userMsgId
+        }).catch(async (err) => {
+            console.log(err.code)
+            console.log(err.response?.body)
         })
     }
 }
