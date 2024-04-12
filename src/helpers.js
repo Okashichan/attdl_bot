@@ -9,7 +9,7 @@ const getLinkType = (link) => {
     return null
 }
 
-const getTiktokId = async (url) => {
+const getResponceUrl = async (url) => {
     const response = await fetch(url.includes('https://') ? url : `https://${url}`)
     const responceUrl = response?.url ? response.url : "fuck"
 
@@ -18,9 +18,9 @@ const getTiktokId = async (url) => {
 
 const handleTikTokLink = async (url, type = 'message') => {
     if (!url.includes('tiktok')) return null
-    if (url.includes('vt.tiktok.com')) url = await getTiktokId(url)
-    if (url.includes('vm.tiktok.com')) url = await getTiktokId(url)
-    if (url.includes('/t/')) url = await getTiktokId(url)
+    if (url.includes('vt.tiktok.com')) url = await getResponceUrl(url)
+    if (url.includes('vm.tiktok.com')) url = await getResponceUrl(url)
+    if (url.includes('/t/')) url = await getResponceUrl(url)
 
     let videoId = ''
     const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=|video\/)([\d]*)/gm
@@ -118,26 +118,35 @@ const handleInstagramLink = async (url) => {
 
     console.log(`Instagram id: ${videoId}`)
 
-    const res = await $`yt-dlp --dump-json https://www.instagram.com/p/${videoId}/`.json()
+    try {
+        const res = await $`yt-dlp --dump-json https://www.instagram.com/p/${videoId}/`.json()
 
-    return { url: res.url, title: res.title }
+        return { url: res.url, title: res.title }
+    } catch (e) {
+        console.log(e.stderr.toString())
+    }
 }
 
 const handleRedditLink = async (url) => {
     if (!url.includes('reddit')) return null
 
+    if (url.includes('/s/')) url = await getResponceUrl(url)
+
     console.log(`Reddit id: ${url}`)
 
-    const res = (await $`gallery-dl --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} ${url}`.text())
-        .split(/\r?\n/).filter(line => line.trim() !== "")
-        .map(url => {
-            return {
-                type: "photo",
-                media: url
-            }
-        })
-
-    return { images: res }
+    try {
+        const res = (await $`gallery-dl --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} ${url}`.text())
+            .split(/\r?\n/).filter(line => line.trim() !== "")
+            .map(url => {
+                return {
+                    type: "photo",
+                    media: url
+                }
+            })
+        return { images: res }
+    } catch (e) {
+        console.log(e.stderr.toString())
+    }
 }
 
 const handleYoutubeLink = async (url) => {
