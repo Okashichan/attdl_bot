@@ -110,13 +110,15 @@ const handleTikTokLink = async (url, type = 'message') => {
 const handleInstagramLink = async (url) => {
     if (!url.includes('instagram')) return null
 
-    // let videoId = url.indexOf('reels/') !== -1
-    //     ? url.split('reels/')[1].split('/')[0]
-    //     : url.indexOf('reel/') !== -1
-    //         ? url.split('reel/')[1].split('/')[0]
-    //         : url.split('p/')[1].split('/')[0]
+    let videoId = url.indexOf('reels/') !== -1
+        ? url.split('reels/')[1].split('/')[0]
+        : url.indexOf('reel/') !== -1
+            ? url.split('reel/')[1].split('/')[0]
+            : url.split('p/')[1].split('/')[0]
 
-    const res = await $`yt-dlp --dump-json ${url}`.json()
+    console.log(`Instagram id: ${videoId}`)
+
+    const res = await $`yt-dlp --dump-json https://www.instagram.com/p/${videoId}/`.json()
 
     return { url: res.url, title: res.title }
 }
