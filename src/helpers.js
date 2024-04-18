@@ -118,13 +118,13 @@ const handleInstagramLink = async (url) => {
 
     console.log(`Instagram id: ${videoId}`)
 
-    try {
-        const res = await $`yt-dlp --dump-json https://www.instagram.com/p/${videoId}/`.json()
+    let res = await fetch(`https://instagram-videos.vercel.app/api/video?postUrl=https://www.instagram.com/reel/${videoId}`)
+        .then(res => res.json())
+        .catch(e => console.log(e))
 
-        return { url: res.url, title: res.title }
-    } catch (e) {
-        console.log(e.stderr.toString())
-    }
+    if (res.status !== 'success') return
+
+    return { url: res.data.videoUrl }
 }
 
 const handleRedditLink = async (url) => {
@@ -135,7 +135,7 @@ const handleRedditLink = async (url) => {
     console.log(`Reddit id: ${url}`)
 
     try {
-        const res = (await $`gallery-dl --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} ${url}`.text())
+        const res = (await $`gallery-dl --get-url -o reddit-client-id=${Bun.env.REDIT_CLIENT_ID} ${url}`.text())
             .split(/\r?\n/).filter(line => line.trim() !== "")
             .map(url => {
                 return {

@@ -18,8 +18,8 @@ const sendOptions = {
 const bot = new TelegramBot(token, { polling: true })
 
 // bruh
-await $`gallery-dl --range 1 --get-url 'https://www.reddit.com/'`
-await $`gallery-dl --range 1 --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} 'https://www.reddit.com/'`
+// await $`gallery-dl --range 1 --get-url 'https://www.reddit.com/'`
+// await $`gallery-dl --range 1 --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} 'https://www.reddit.com/'`
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id
