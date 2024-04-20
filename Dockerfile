@@ -1,4 +1,4 @@
-FROM oven/bun:canary
+FROM oven/bun:latest
 
 WORKDIR /usr/src/app
 
