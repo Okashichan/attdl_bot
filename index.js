@@ -62,11 +62,11 @@ bot.onText(urlRe, async (msg, match) => {
                 handleYoutubeLogic(url, chatId, userMsgId, userMsg)
                 break
             }
-        case 'reddit':
-            {
-                handleRedditLogic(url, chatId, userMsgId, userMsg, chatType)
-                break
-            }
+        // case 'reddit':
+        //     {
+        //         handleRedditLogic(url, chatId, userMsgId, userMsg, chatType)
+        //         break
+        //     }
         default:
             break
     }
