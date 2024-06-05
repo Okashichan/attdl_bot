@@ -2,12 +2,11 @@ import TelegramBot from 'node-telegram-bot-api'
 import { download } from './src/download'
 import helpers from './src/helpers'
 import locale from './locale'
-import { $ } from 'bun'
 
 const token = Bun.env.TELEGRAM_BOT_TOKEN
-const instagramToken = Bun.env.INSTAGRAM_COOKIE || ''
 const cachedChat = Bun.env.TELEGRAM_CACHED_CHAT || ''
 
+const topicNames = ['мем', 'mem']
 const urlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gm
 
 const sendOptions = {
@@ -16,10 +15,6 @@ const sendOptions = {
 }
 
 const bot = new TelegramBot(token, { polling: true })
-
-// bruh
-// await $`gallery-dl --range 1 --get-url 'https://www.reddit.com/'`
-// await $`gallery-dl --range 1 --get-url -o client-id=${Bun.env.REDIT_CLIENT_ID} 'https://www.reddit.com/'`
 
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id
@@ -40,11 +35,15 @@ bot.onText(/\/help/, (msg) => {
 })
 
 bot.onText(urlRe, async (msg, match) => {
-    const chatId = msg.chat.id
-    const userMsgId = msg.message_id
-    const userMsg = msg?.text
-    const chatType = msg.chat.type
-    const url = match[0]
+    const [url, ..._] = match
+    const {
+        chat: { id: chatId, type: chatType, is_forum: isForum },
+        reply_to_message: { forum_topic_created: { name: topicName } = {} } = {},
+        text: userMsg,
+        message_id: userMsgId,
+    } = msg
+
+    if (isForum && !topicNames.some(s => topicName?.toLowerCase().includes(s))) return
 
     switch (helpers.getLinkType(url)) {
         case 'tiktok':
@@ -102,7 +101,7 @@ bot.on('polling_error', (err) => {
     console.log(err.response?.body)
 })
 
-async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
+async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType, isTopic, canSendInTopic) {
     const data = await helpers.handleTikTokLink(url)
 
     if (data === undefined || data === null) {
