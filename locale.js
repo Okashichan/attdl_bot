@@ -11,6 +11,7 @@ There are 3 ways of usage:\n
 For TikTok's with images, there are 1 min delay in sending because of Telegram limits.
 In private chat with the bot, there is only 3 sec delay. 
 Also, if there are a lot of images, the inline query might work only after you sent TikTok to any chat, which were handled.
+\nFor bot to answer in the topic of a forum, you need to include the word "mem" in the topic name.
 `
         },
         'UA': {
@@ -25,6 +26,7 @@ Also, if there are a lot of images, the inline query might work only after you s
 Для TikTok із зображеннями присутня 1 хвилина затримки надсилання через обмеження Telegram.
 У приватному чаті з ботом затримка всього 3 секунди.
 Крім того, якщо зображень багато вбудований запит може запрацювати лише після того як ви надіслали TikTok до будь-якого чату, який було оброблено ботом.
+\nЩоб бот відповідав на повідомлення у гілці, вам потрібно включити у назву гілки слово "мем" або "mem".
         `
         }
 }
