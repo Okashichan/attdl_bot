@@ -5,6 +5,10 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN bun install
 
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip && \
+    pip3 install --no-cache-dir requests && \
+    rm -rf /var/lib/apt/lists/*
 # Install dependencies
 # RUN apt-get update && apt-get install -y ffmpeg python3 python3-pip
 

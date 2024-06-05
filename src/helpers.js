@@ -33,29 +33,16 @@ const handleTikTokLink = async (url, type = 'message') => {
 
     console.log(`TikTok id: ${videoId}`)
 
-    const headers = {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36'
+    const getAweme = async () => {
+        try {
+            const out = await $`python request.py ${videoId}`.json()
+            return out
+        } catch (e) {
+            console.log(`handleTikTokLink()|failed to call python script...`)
+        }
     }
 
-    const params = new URLSearchParams({
-        "iid": '7318518857994389254',
-        "device_id": Math.floor(Math.random() * (7351147085025500000 - 7250000000000000000 + 1)) + 7250000000000000000,
-        "version_code": "1337",
-        "aweme_id": videoId
-    })
-
-    let res = await fetch(`https://api22-normal-c-alisg.tiktokv.com/aweme/v1/feed/?${params.toString()}`,
-        { headers })
-        .then(res => res.json())
-        .catch(e => console.log(e))
-
-    // Should return when API broken again
-    // if (res?.status !== 'success') return
-
-    // return {
-    //     urls: res.videos,
-    //     origin_url: url
-    // }
+    const res = await getAweme()
 
     if (res?.aweme_list[0] === undefined || res?.aweme_list[0] === null) {
         console.log(`handleTikTokLink(${url})|failed to handle api request...`)
