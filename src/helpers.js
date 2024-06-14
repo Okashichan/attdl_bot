@@ -3,7 +3,7 @@ import { $ } from "bun"
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     if (link.includes('tiktok.com/music')) return 'tiktok_music'
-    if (link.includes('instagram.com/reel')) return 'instagram'
+    if (link.includes('instagram.com')) return 'instagram'
     if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
     if (link.includes('reddit.com')) return 'reddit'
     return null
