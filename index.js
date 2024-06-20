@@ -53,7 +53,8 @@ bot.onText(urlRe, async (msg, match) => {
             }
         case 'instagram':
             {
-                handleInstagramLogic(url, chatId, userMsgId, userMsg)
+                // Temporary disabled
+                // handleInstagramLogic(url, chatId, userMsgId, userMsg)
                 break
             }
         case 'youtube':
@@ -83,7 +84,8 @@ bot.on('inline_query', async (msg) => {
             }
         case 'instagram':
             {
-                handleInstagramInlineLogic(query, queryId)
+                // Temporary disabled
+                // handleInstagramInlineLogic(query, queryId)
                 break
             }
         case 'youtube':
@@ -215,8 +217,6 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
         console.log(`onText(${userMsg})|failed to handle your link...`)
         return
     }
-
-    console.log(data)
 
     if (data?.url) {
         bot.sendVideo(chatId, data.url, {

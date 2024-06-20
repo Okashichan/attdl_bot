@@ -141,12 +141,16 @@ const handleYoutubeLink = async (url) => {
 
     const res = await fetch(`https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url.includes('https://') ? url : `https://` + url}`,
         { method: 'POST' })
-        .then(res => res.json())
         .catch(e => console.log(e))
 
+
+    console.log(res)
+
+    const resJson = await res.json()
+
     return {
-        url: res?.url,
-        title: res?.title,
+        url: resJson?.url,
+        title: resJson?.title,
     }
 }
 
