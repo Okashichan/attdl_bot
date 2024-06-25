@@ -3,33 +3,34 @@ import { $ } from "bun"
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     if (link.includes('tiktok.com/music')) return 'tiktok_music'
-    if (link.includes('instagram.com')) return 'instagram'
+    if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
     if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
-    if (link.includes('reddit.com')) return 'reddit'
+    if (
+        link.includes('reddit.com')
+        || link.includes('x.com')
+        || link.includes('twitter')
+        || link.includes('twitch')
+    ) return 'universal'
     return null
 }
 
 const getResponceUrl = async (url) => {
-    const response = await fetch(url.includes('https://') ? url : `https://${url}`)
+    const response = await fetch(url)
     const responceUrl = response?.url ? response.url : "fuck"
 
     return responceUrl
 }
 
 const handleTikTokLink = async (url, type = 'message') => {
-    if (!url.includes('tiktok')) return null
     if (url.includes('vt.tiktok.com')) url = await getResponceUrl(url)
     if (url.includes('vm.tiktok.com')) url = await getResponceUrl(url)
     if (url.includes('/t/')) url = await getResponceUrl(url)
 
     let videoId = ''
     const re = /(@[a-zA-z0-9]*|.*)(\/.*\/|trending.?shareId=|item_id=|video\/)([\d]*)/gm
-    const newRe = /\/video\/(\d+)\?/
 
     if (!url.includes('redirect_url=')) videoId = url.split(re)[3]
     else videoId = decodeURIComponent(url).split(re)[3]
-
-    url = url.includes('https://') ? url : `https://${url}`
 
     console.log(`TikTok id: ${videoId}`)
 
@@ -95,9 +96,7 @@ const handleTikTokLink = async (url, type = 'message') => {
 }
 
 const handleInstagramLink = async (url) => {
-    if (!url.includes('instagram')) return null
-
-    let videoId = url.indexOf('reels/') !== -1
+    const videoId = url.indexOf('reels/') !== -1
         ? url.split('reels/')[1].split('/')[0]
         : url.indexOf('reel/') !== -1
             ? url.split('reel/')[1].split('/')[0]
@@ -105,7 +104,7 @@ const handleInstagramLink = async (url) => {
 
     console.log(`Instagram id: ${videoId}`)
 
-    let res = await fetch(`https://instagram-videos.vercel.app/api/video?postUrl=https://www.instagram.com/reel/${videoId}`)
+    const res = await fetch(`https://instagram-videos.vercel.app/api/video?postUrl=https://www.instagram.com/reel/${videoId}`)
         .then(res => res.json())
         .catch(e => console.log(e))
 
@@ -114,51 +113,43 @@ const handleInstagramLink = async (url) => {
     return { url: res.data.videoUrl }
 }
 
-const handleRedditLink = async (url) => {
-    if (!url.includes('reddit')) return null
-
-    if (url.includes('/s/')) url = await getResponceUrl(url)
-
-    console.log(`Reddit id: ${url}`)
-
-    try {
-        const res = (await $`gallery-dl --get-url -o reddit-client-id=${Bun.env.REDIT_CLIENT_ID} ${url}`.text())
-            .split(/\r?\n/).filter(line => line.trim() !== "")
-            .map(url => {
-                return {
-                    type: "photo",
-                    media: url
-                }
-            })
-        return { images: res }
-    } catch (e) {
-        console.log(e.stderr.toString())
-    }
-}
-
 const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
 
-    const res = await fetch(`https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url.includes('https://') ? url : `https://` + url}`,
+    const res = await fetch(`https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url}`,
         { method: 'POST' })
+        .then(res => res.json())
         .catch(e => console.log(e))
 
-
-    console.log(res)
-
-    const resJson = await res.json()
-
     return {
-        url: resJson?.url,
-        title: resJson?.title,
+        url: res?.url,
+        title: res?.title,
     }
 }
 
+const handleUniversalLink = async (url) => {
+    console.log(`Origin url: ${url}`)
+
+    const res = await fetch('https://api.cobalt.tools/api/json', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+    }).then(res => res.json()).catch(e => console.log(e))
+
+    if (res?.status === 'error') return
+
+    return {
+        url: res?.url
+    }
+}
 
 export default {
     getLinkType,
     handleTikTokLink,
     handleInstagramLink,
     handleYoutubeLink,
-    handleRedditLink
+    handleUniversalLink
 }

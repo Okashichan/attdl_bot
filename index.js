@@ -7,7 +7,7 @@ const token = Bun.env.TELEGRAM_BOT_TOKEN
 const cachedChat = Bun.env.TELEGRAM_CACHED_CHAT || ''
 
 const topicNames = ['мем', 'mem']
-const urlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gm
+const urlRe = /\b((http|https):\/\/)?(www\.)?[\w-]+\.[\w.-]+(?:\.[a-z]{2,})?(\/[\w.,@?^=%&:/~+#-]*)?\b/gm;
 
 const sendOptions = {
     disable_notification: true,
@@ -35,13 +35,15 @@ bot.onText(/\/help/, (msg) => {
 })
 
 bot.onText(urlRe, async (msg, match) => {
-    const [url, ..._] = match
+    let [url, ..._] = match
     const {
         chat: { id: chatId, type: chatType, is_forum: isForum },
         reply_to_message: { forum_topic_created: { name: topicName } = {} } = {},
         text: userMsg,
         message_id: userMsgId,
     } = msg
+
+    if (!url.includes('https://')) url = `https://${url}`
 
     if (isForum && !topicNames.some(s => topicName?.toLowerCase().includes(s))) return
 
@@ -62,11 +64,11 @@ bot.onText(urlRe, async (msg, match) => {
                 handleYoutubeLogic(url, chatId, userMsgId, userMsg)
                 break
             }
-        // case 'reddit':
-        //     {
-        //         handleRedditLogic(url, chatId, userMsgId, userMsg, chatType)
-        //         break
-        //     }
+        case 'universal':
+            {
+                handleUniversalLogic(url, chatId, userMsgId, userMsg)
+                break
+            }
         default:
             break
     }
@@ -91,6 +93,11 @@ bot.on('inline_query', async (msg) => {
         case 'youtube':
             {
                 handleYoutubeInlineLogic(query, queryId)
+                break
+            }
+        case 'universal':
+            {
+                handleUniversalInlineLogic(query, queryId)
                 break
             }
         default:
@@ -238,17 +245,19 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
     }
 }
 
-async function handleRedditLogic(url, chatId, userMsgId, userMsg, chatType) {
-    const data = await helpers.handleRedditLink(url)
+async function handleUniversalLogic(url, chatId, userMsgId, userMsg, chatType) {
+    const data = await helpers.handleUniversalLink(url)
 
     if (data === undefined || data === null) {
         console.log(`onText(${userMsg})|failed to handle your link...`)
         return
     }
 
-    if (data?.images) {
-        bot.sendChatAction(chatId, 'upload_photo')
-        await bot.sendMediaGroup(chatId, data.images, {
+    if (data?.url) {
+
+        const videoBuffer = await download(data.url)
+
+        bot.sendVideo(chatId, videoBuffer, {
             ...sendOptions,
             reply_to_message_id: userMsgId
         }).catch(async (err) => {
@@ -389,6 +398,45 @@ async function handleYoutubeInlineLogic(query, queryId) {
                         text: 'Watch on YouTube',
                         url: query
                     }],
+                    [{
+                        text: 'Download',
+                        url: data.url
+                    }]
+                ]
+            }
+        }]
+
+        bot.answerInlineQuery(queryId, results).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        })
+    }
+}
+
+async function handleUniversalInlineLogic(query, queryId) {
+    const data = await helpers.handleUniversalLink(query)
+
+    if (data === undefined || data === null) {
+        console.log(`inline_query(${query})|failed to handle your link...`)
+    }
+    else if (data?.url) {
+        const videoBuffer = await download(data.url)
+
+        const { video: { file_id: fileId } } = await bot.sendVideo(cachedChat, videoBuffer, {
+            ...sendOptions
+        }).catch(async (err) => {
+            console.log(err.code)
+            console.log(err.response?.body)
+        }) || {}
+
+        let results = [{
+            type: 'video',
+            id: 0,
+            video_url: fileId,
+            title: `Universal Video`,
+            mime_type: 'video/mp4',
+            reply_markup: {
+                inline_keyboard: [
                     [{
                         text: 'Download',
                         url: data.url
