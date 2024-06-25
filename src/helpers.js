@@ -128,6 +128,8 @@ const handleYoutubeLink = async (url) => {
 }
 
 const handleUniversalLink = async (url) => {
+    if (url.includes('reddit.com')) url = await getResponceUrl(url)
+
     console.log(`Origin url: ${url}`)
 
     const res = await fetch('https://api.cobalt.tools/api/json', {
