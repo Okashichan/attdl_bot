@@ -53,12 +53,12 @@ bot.onText(urlRe, async (msg, match) => {
                 handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType)
                 break
             }
-        case 'instagram':
-            {
-                // Temporary disabled
-                // handleInstagramLogic(url, chatId, userMsgId, userMsg)
-                break
-            }
+        // Temporary disabled
+        // case 'instagram':
+        //     {
+        //         handleInstagramLogic(url, chatId, userMsgId, userMsg)
+        //         break
+        //     }
         case 'youtube':
             {
                 handleYoutubeLogic(url, chatId, userMsgId, userMsg)
@@ -84,12 +84,12 @@ bot.on('inline_query', async (msg) => {
                 handleTikTokInlineLogic(query, queryId)
                 break
             }
-        case 'instagram':
-            {
-                // Temporary disabled
-                // handleInstagramInlineLogic(query, queryId)
-                break
-            }
+        // Temporary disabled
+        // case 'instagram':
+        //     {
+        //         handleInstagramInlineLogic(query, queryId)
+        //         break
+        //     }
         case 'youtube':
             {
                 handleYoutubeInlineLogic(query, queryId)

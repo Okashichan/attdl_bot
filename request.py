@@ -2,6 +2,7 @@ import requests
 import random
 import sys
 import json
+import time
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -15,7 +16,14 @@ p = {
 u = "https://api22-normal-c-alisg.tiktokv.com/aweme/v1/feed/"
 
 try:
+    t = 0
     r = requests.options(u, params=p)
-    print(json.dumps(r.json()))
+
+    while r.status_code == 429 and t < 5:
+        t+=1
+        time.sleep(1)
+        r = requests.options(u, params=p)
+
+    sys.stdout.buffer.write(r.content)
 except requests.exceptions.RequestException as e:
     pass

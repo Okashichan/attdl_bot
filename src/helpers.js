@@ -3,13 +3,14 @@ import { $ } from "bun"
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     if (link.includes('tiktok.com/music')) return 'tiktok_music'
-    if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
+    // if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
     if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
     if (
         link.includes('reddit.com')
         || link.includes('x.com')
         || link.includes('twitter')
         || link.includes('twitch')
+        || link.includes('instagram')
     ) return 'universal'
     return null
 }
@@ -36,7 +37,8 @@ const handleTikTokLink = async (url, type = 'message') => {
 
     const getAweme = async () => {
         try {
-            const out = await $`python request.py ${videoId}`.json()
+            const out = await $`python request.py ${videoId}`.json();
+
             return out
         } catch (e) {
             console.log(`handleTikTokLink()|failed to call python script...`)
@@ -95,23 +97,23 @@ const handleTikTokLink = async (url, type = 'message') => {
     }
 }
 
-const handleInstagramLink = async (url) => {
-    const videoId = url.indexOf('reels/') !== -1
-        ? url.split('reels/')[1].split('/')[0]
-        : url.indexOf('reel/') !== -1
-            ? url.split('reel/')[1].split('/')[0]
-            : url.split('p/')[1].split('/')[0]
+// const handleInstagramLink = async (url) => {
+//     const videoId = url.indexOf('reels/') !== -1
+//         ? url.split('reels/')[1].split('/')[0]
+//         : url.indexOf('reel/') !== -1
+//             ? url.split('reel/')[1].split('/')[0]
+//             : url.split('p/')[1].split('/')[0]
 
-    console.log(`Instagram id: ${videoId}`)
+//     console.log(`Instagram id: ${videoId}`)
 
-    const res = await fetch(`https://instagram-videos.vercel.app/api/video?postUrl=https://www.instagram.com/reel/${videoId}`)
-        .then(res => res.json())
-        .catch(e => console.log(e))
+//     const res = await fetch(`https://instagram-videos.vercel.app/api/video?postUrl=https://www.instagram.com/reel/${videoId}`)
+//         .then(res => res.json())
+//         .catch(e => console.log(e))
 
-    if (res.status !== 'success') return
+//     if (res.status !== 'success') return
 
-    return { url: res.data.videoUrl }
-}
+//     return { url: res.data.videoUrl }
+// }
 
 const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
@@ -151,7 +153,6 @@ const handleUniversalLink = async (url) => {
 export default {
     getLinkType,
     handleTikTokLink,
-    handleInstagramLink,
     handleYoutubeLink,
     handleUniversalLink
 }
