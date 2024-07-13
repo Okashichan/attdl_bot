@@ -17,12 +17,13 @@ u = "https://api22-normal-c-alisg.tiktokv.com/aweme/v1/feed/"
 
 try:
     t = 0
+    to = 5
     r = requests.options(u, params=p)
 
-    while r.status_code == 429 and t < 5:
+    while r.status_code == 429 and t < to:
         t+=1
         time.sleep(1)
-        r = requests.options(u, params=p)
+        r = requests.options(u, params=p, timeout=to)
 
     sys.stdout.buffer.write(r.content)
 except requests.exceptions.RequestException as e:

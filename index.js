@@ -1,5 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api'
 import { download } from './src/download'
+import { unlinkSync } from 'node:fs'
+import fs from 'node:fs/promises'
 import helpers from './src/helpers'
 import locale from './locale'
 
@@ -225,23 +227,19 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
         return
     }
 
-    if (data?.url) {
-        bot.sendVideo(chatId, data.url, {
+    if (data?.path) {
+        bot.sendVideo(chatId, data.path, {
             ...sendOptions,
             reply_to_message_id: userMsgId,
             caption: data.title
-        }).catch(async (err) => {
-            download(data.url).then((videoBuffer) => {
-                bot.sendVideo(chatId, videoBuffer, {
-                    ...sendOptions,
-                    reply_to_message_id: userMsgId,
-                    caption: data.title
-                }).catch(async (err) => {
-                    console.log(err.code)
-                    console.log(err.response?.body)
-                })
-            })
         })
+        .catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        })
+        .finally(
+            unlinkSync(data.path)
+        )
     }
 }
 
@@ -383,24 +381,33 @@ async function handleYoutubeInlineLogic(query, queryId) {
     if (data === undefined || data === null) {
         console.log(`inline_query(${query})|failed to handle your link...`)
     }
-    else if (data?.url) {
+    else if (data?.path) {
+
+        const { video: { file_id: cachedVideo } = {} } = await bot.sendVideo(cachedChat, data.path, {
+            ...sendOptions,
+            caption: data.title
+        }).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        }) || {}
+
+        if (!cachedVideo) {
+            return
+        }
+
+        fs.rm('downloads', { recursive: true, force: true })
+
         let results = [{
             type: 'video',
             id: 0,
             caption: data.title,
-            video_url: data.url,
-            thumb_url: data.url,
+            video_file_id: cachedVideo,
             title: data.title,
-            mime_type: 'video/mp4',
             reply_markup: {
                 inline_keyboard: [
                     [{
                         text: 'Watch on YouTube',
                         url: query
-                    }],
-                    [{
-                        text: 'Download',
-                        url: data.url
                     }]
                 ]
             }
@@ -437,6 +444,10 @@ async function handleUniversalInlineLogic(query, queryId) {
             mime_type: 'video/mp4',
             reply_markup: {
                 inline_keyboard: [
+                    [{
+                        text: 'Watch source',
+                        url: query
+                    }],
                     [{
                         text: 'Download',
                         url: data.url

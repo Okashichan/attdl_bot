@@ -1,4 +1,5 @@
 import { $ } from "bun"
+import fs from 'node:fs/promises'
 
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
@@ -37,7 +38,7 @@ const handleTikTokLink = async (url, type = 'message') => {
 
     const getAweme = async () => {
         try {
-            const out = await $`python request.py ${videoId}`.json();
+            const out = await $`python request.py ${videoId}`.json()
 
             return out
         } catch (e) {
@@ -118,13 +119,21 @@ const handleTikTokLink = async (url, type = 'message') => {
 const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
 
-    const res = await fetch(`https://ytdlapi.util.pp.ua/get_video_url/?youtube_url=${url}`,
-        { method: 'POST' })
-        .then(res => res.json())
-        .catch(e => console.log(e))
+    const ytdlp = async () => {
+        try {
+            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp -o "./downloads/%(id)s.%(ext)s" --print-json --max-filesize 50M ${url}`.json()
+
+            return out
+        } catch (e) {
+            console.log(`handleTikTokLink()|failed to call python script...`)
+            fs.rm('downloads', { recursive: true, force: true })
+        }
+    }
+
+    const res = await ytdlp()
 
     return {
-        url: res?.url,
+        path: res?.filename,
         title: res?.title,
     }
 }
