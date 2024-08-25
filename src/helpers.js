@@ -3,15 +3,17 @@ import fs from 'node:fs/promises'
 
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
-    if (link.includes('tiktok.com/music')) return 'tiktok_music'
+    // if (link.includes('tiktok.com/music')) return 'tiktok_music'
     // if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
-    if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
+    // if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
     if (
         link.includes('reddit.com')
         || link.includes('x.com')
         || link.includes('twitter')
         || link.includes('twitch')
         || link.includes('instagram')
+        || link.includes('youtube.com') 
+        || link.includes('youtu.be')
     ) return 'universal'
     return null
 }
