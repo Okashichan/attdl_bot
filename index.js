@@ -65,6 +65,11 @@ bot.onText(urlRe, async (msg, match) => {
                 handleTwitterLogic(url, chatId, userMsgId, userMsg)
                 break
             }
+        case 'instagram':
+            {
+                handleInstagramLink(url, chatId, userMsgId, userMsg)
+                break
+            }
         default:
             break
     }
@@ -88,6 +93,11 @@ bot.on('inline_query', async (msg) => {
         case 'twitter':
             {
                 handleTwitterInlineLogic(query, queryId)
+                break
+            }
+        case 'instagram':
+            {
+                handleInstagramInlineLogic(query, queryId)
                 break
             }
         default:
@@ -235,6 +245,26 @@ async function handleTwitterLogic(url, chatId, userMsgId, userMsg) {
         data.images.at(-1).caption = data.text
         bot.sendMediaGroup(chatId, data.images, {
             ...sendOptions,
+            reply_to_message_id: userMsgId
+        }).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        })
+    }
+}
+
+async function handleInstagramLink(url, chatId, userMsgId, userMsg) {
+    const data = await helpers.handleInstagramLink(url)
+
+    if (data === undefined || data === null) {
+        console.log(`onText(${userMsg})|failed to handle your link...`)
+        return
+    }
+
+    if (data?.url) {
+        bot.sendVideo(chatId, data.url, {
+            ...sendOptions,
+            caption: data.text,
             reply_to_message_id: userMsgId
         }).catch((err) => {
             console.log(err.code)
@@ -432,5 +462,41 @@ async function handleTwitterInlineLogic(query, queryId) {
     }
     else {
         console.log(`inline_query(${query})|Something realy went wrong...`)
+    }
+}
+
+async function handleInstagramInlineLogic(query, queryId) {
+    const data = await helpers.handleInstagramLink(query)
+
+    if (data === undefined || data === null) {
+        console.log(`inline_query(${query})|failed to handle your link...`)
+    }
+    else if (data?.url) {
+        let results = [{
+            type: 'video',
+            id: 0,
+            video_url: data.url,
+            caption: data.text,
+            title: 'Instagram video',
+            thumb_url: data.url,
+            mime_type: 'video/mp4',
+            reply_markup: {
+                inline_keyboard: [
+                    [{
+                        text: 'Watch on Instagram',
+                        url: query
+                    }],
+                    [{
+                        text: 'Download',
+                        url: data.url
+                    }]
+                ]
+            }
+        }]
+
+        bot.answerInlineQuery(queryId, results).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        })
     }
 }

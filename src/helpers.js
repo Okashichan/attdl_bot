@@ -147,9 +147,31 @@ const handleTwitterLink = async (url) => {
     }
 }
 
+const handleInstagramLink = async (url) => {
+    console.log(`Instagram id: ${url}`)
+
+    const ytdlp = async () => {
+        try {
+            const out = await $`timeout 15s yt-dlp --print-json --skip-download ${url}`.json()
+
+            return out
+        } catch (e) {
+            console.log(`handleYoutubeLink()|failed to call python script...`)
+        }
+    }
+
+    const res = await ytdlp()
+
+    return {
+        url: res?.url,
+        text: res?.description
+    }
+}
+
 export default {
     getLinkType,
     handleTikTokLink,
     handleYoutubeLink,
-    handleTwitterLink
+    handleTwitterLink,
+    handleInstagramLink
 }
