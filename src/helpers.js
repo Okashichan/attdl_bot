@@ -3,16 +3,9 @@ import fs from 'node:fs/promises'
 
 const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
-    // if (link.includes('tiktok.com/music')) return 'tiktok_music'
-    // if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
     if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
-    if (
-        link.includes('reddit.com')
-        || link.includes('x.com')
-        || link.includes('twitter')
-        || link.includes('twitch')
-        || link.includes('instagram')
-    ) return 'universal'
+    if (link.includes('twitter.com') || link.includes('x.com')) return 'twitter'
+    if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
     return null
 }
 
@@ -98,24 +91,6 @@ const handleTikTokLink = async (url, type = 'message') => {
     }
 }
 
-// const handleInstagramLink = async (url) => {
-//     const videoId = url.indexOf('reels/') !== -1
-//         ? url.split('reels/')[1].split('/')[0]
-//         : url.indexOf('reel/') !== -1
-//             ? url.split('reel/')[1].split('/')[0]
-//             : url.split('p/')[1].split('/')[0]
-
-//     console.log(`Instagram id: ${videoId}`)
-
-//     const res = await fetch(`https://instagram-videos.vercel.app/api/video?postUrl=https://www.instagram.com/reel/${videoId}`)
-//         .then(res => res.json())
-//         .catch(e => console.log(e))
-
-//     if (res.status !== 'success') return
-
-//     return { url: res.data.videoUrl }
-// }
-
 const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
 
@@ -138,24 +113,37 @@ const handleYoutubeLink = async (url) => {
     }
 }
 
-const handleUniversalLink = async (url) => {
-    if (url.includes('reddit.com')) url = await getResponceUrl(url)
+const handleTwitterLink = async (url) => {
+    
+    const postId = (url.match(/\/status\/(\d+)/) || [])[1]
+    console.log(`Twitter post id: ${postId}`)
 
-    console.log(`Origin url: ${url}`)
+    const res = await fetch(`https://api.vxtwitter.com/Twitter/status/${postId}`)
+        .then(res => res.json())
+        .catch(e => console.log(e))
 
-    const res = await fetch('https://api.cobalt.tools/api/json', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ url })
-    }).then(res => res.json()).catch(e => console.log(e))
+    if (res?.hasMedia === false) return
 
-    if (res?.status === 'error') return
+    if (res?.mediaURLs?.length < 1) return
 
-    return {
-        url: res?.url
+    if (res?.mediaURLs?.length >= 1 && res?.mediaURLs.at(-1)?.includes('video.twimg.com')) {
+        return {
+            video: res.media_extended.at(-1).url,
+            thumb: res.media_extended.at(-1).thumbnail_url,
+            text: res.text.replace(/https:\/\/t\.co\/\S+/g, '')
+        }
+    }
+
+    if (res?.mediaURLs?.length >= 1 && res?.mediaURLs.at(-1)?.includes('pbs.twimg.com')) {
+        return {
+            images: res.media_extended.map((el) => {
+                return {
+                    type: 'photo',
+                    media: el.url
+                }
+            }),
+            text: res.text.replace(/https:\/\/t\.co\/\S+/g, '')
+        }
     }
 }
 
@@ -163,5 +151,5 @@ export default {
     getLinkType,
     handleTikTokLink,
     handleYoutubeLink,
-    handleUniversalLink
+    handleTwitterLink
 }

@@ -55,20 +55,14 @@ bot.onText(urlRe, async (msg, match) => {
                 handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType)
                 break
             }
-        // Temporary disabled
-        // case 'instagram':
-        //     {
-        //         handleInstagramLogic(url, chatId, userMsgId, userMsg)
-        //         break
-        //     }
         case 'youtube':
             {
                 handleYoutubeLogic(url, chatId, userMsgId, userMsg)
                 break
             }
-        case 'universal':
+        case 'twitter':
             {
-                handleUniversalLogic(url, chatId, userMsgId, userMsg)
+                handleTwitterLogic(url, chatId, userMsgId, userMsg)
                 break
             }
         default:
@@ -86,20 +80,14 @@ bot.on('inline_query', async (msg) => {
                 handleTikTokInlineLogic(query, queryId)
                 break
             }
-        // Temporary disabled
-        // case 'instagram':
-        //     {
-        //         handleInstagramInlineLogic(query, queryId)
-        //         break
-        //     }
         case 'youtube':
             {
                 handleYoutubeInlineLogic(query, queryId)
                 break
             }
-        case 'universal':
+        case 'twitter':
             {
-                handleUniversalInlineLogic(query, queryId)
+                handleTwitterInlineLogic(query, queryId)
                 break
             }
         default:
@@ -200,25 +188,6 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType, isTo
     }
 }
 
-async function handleInstagramLogic(url, chatId, userMsgId, userMsg) {
-    const data = await helpers.handleInstagramLink(url)
-
-    if (data === undefined || data === null) {
-        console.log(`onText(${userMsg})|failed to handle your link...`)
-        return
-    }
-
-    if (data?.url) {
-        bot.sendVideo(chatId, data.url, {
-            ...sendOptions,
-            reply_to_message_id: userMsgId
-        }).catch(async (err) => {
-            console.log(err.code)
-            console.log(err.response?.body)
-        })
-    }
-}
-
 async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
     const data = await helpers.handleYoutubeLink(url)
 
@@ -243,24 +212,33 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
     }
 }
 
-async function handleUniversalLogic(url, chatId, userMsgId, userMsg, chatType) {
-    const data = await helpers.handleUniversalLink(url)
+async function handleTwitterLogic(url, chatId, userMsgId, userMsg) {
+    const data = await helpers.handleTwitterLink(url)
 
     if (data === undefined || data === null) {
         console.log(`onText(${userMsg})|failed to handle your link...`)
         return
     }
 
-    if (data?.url) {
+    if (data?.video) {
+        bot.sendVideo(chatId, data.video, {
+            ...sendOptions,
+            reply_to_message_id: userMsgId,
+            caption: data.text
+        }).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        })
+    }
 
-        const videoBuffer = await download(data.url)
-
-        bot.sendVideo(chatId, videoBuffer, {
+    if (data?.images) {
+        data.images.at(-1).caption = data.text
+        bot.sendMediaGroup(chatId, data.images, {
             ...sendOptions,
             reply_to_message_id: userMsgId
-        }).catch(async (err) => {
+        }).catch((err) => {
             console.log(err.code)
-            console.log(err.response?.body)
+            console.log(err.response.body)
         })
     }
 }
@@ -341,40 +319,6 @@ async function handleTikTokInlineLogic(query, queryId) {
     }
 }
 
-async function handleInstagramInlineLogic(query, queryId) {
-    const data = await helpers.handleInstagramLink(query)
-
-    if (data === undefined || data === null) {
-        console.log(`inline_query(${query})|failed to handle your link...`)
-    }
-    else if (data?.url) {
-
-        bot.answerInlineQuery(queryId, [{
-            type: 'video',
-            id: 0,
-            video_url: data.url,
-            title: `Video 1`,
-            mime_type: 'video/mp4',
-            thumb_url: data.url,
-            reply_markup: {
-                inline_keyboard: [
-                    [{
-                        text: 'Watch on Instagram',
-                        url: query
-                    }],
-                    [{
-                        text: 'Download',
-                        url: data.url
-                    }]
-                ]
-            }
-        }]).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
-    }
-}
-
 async function handleYoutubeInlineLogic(query, queryId) {
     const data = await helpers.handleYoutubeLink(query)
 
@@ -420,37 +364,30 @@ async function handleYoutubeInlineLogic(query, queryId) {
     }
 }
 
-async function handleUniversalInlineLogic(query, queryId) {
-    const data = await helpers.handleUniversalLink(query)
+async function handleTwitterInlineLogic(query, queryId) {
+    const data = await helpers.handleTwitterLink(query)
 
     if (data === undefined || data === null) {
         console.log(`inline_query(${query})|failed to handle your link...`)
     }
-    else if (data?.url) {
-        const videoBuffer = await download(data.url)
-
-        const { video: { file_id: fileId } } = await bot.sendVideo(cachedChat, videoBuffer, {
-            ...sendOptions
-        }).catch(async (err) => {
-            console.log(err.code)
-            console.log(err.response?.body)
-        }) || {}
-
+    else if (data?.video) {
         let results = [{
             type: 'video',
             id: 0,
-            video_url: fileId,
-            title: `Universal Video`,
+            video_url: data.video,
+            caption: data.text,
+            title: 'Twitter video',
+            thumb_url: data.thumb,
             mime_type: 'video/mp4',
             reply_markup: {
                 inline_keyboard: [
                     [{
-                        text: 'Watch source',
+                        text: 'Watch on Twitter',
                         url: query
                     }],
                     [{
                         text: 'Download',
-                        url: data.url
+                        url: data.video
                     }]
                 ]
             }
@@ -460,5 +397,40 @@ async function handleUniversalInlineLogic(query, queryId) {
             console.log(err.code)
             console.log(err.response.body)
         })
+    }
+    else if (data?.images) {
+        let results = data.images.map((item, index) => {
+            return {
+                type: 'photo',
+                id: index,
+                caption: data.text,
+                photo_url: item.media,
+                thumb_url: item.media,
+                reply_markup: {
+                    inline_keyboard: [
+                        [{
+                            text: 'See on Twitter',
+                            url: query
+                        }],
+                        [{
+                            text: 'Pics',
+                            switch_inline_query_current_chat: query
+                        },
+                        {
+                            text: 'DL',
+                            url: item.media
+                        }]
+                    ]
+                }
+            }
+        })
+
+        bot.answerInlineQuery(queryId, results).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        })
+    }
+    else {
+        console.log(`inline_query(${query})|Something realy went wrong...`)
     }
 }
