@@ -5,15 +5,13 @@ const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     // if (link.includes('tiktok.com/music')) return 'tiktok_music'
     // if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
-    // if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
+    if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
     if (
         link.includes('reddit.com')
         || link.includes('x.com')
         || link.includes('twitter')
         || link.includes('twitch')
         || link.includes('instagram')
-        || link.includes('youtube.com') 
-        || link.includes('youtu.be')
     ) return 'universal'
     return null
 }
@@ -123,11 +121,11 @@ const handleYoutubeLink = async (url) => {
 
     const ytdlp = async () => {
         try {
-            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp -o "./downloads/%(id)s.%(ext)s" --print-json --max-filesize 50M ${url}`.json()
+            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp -o "./downloads/%(id)s.%(ext)s" --format mp4 --print-json --max-filesize 50M ${url}`.json()
 
             return out
         } catch (e) {
-            console.log(`handleTikTokLink()|failed to call python script...`)
+            console.log(`handleYoutubeLink()|failed to call python script...`)
             fs.rm('downloads', { recursive: true, force: true })
         }
     }
