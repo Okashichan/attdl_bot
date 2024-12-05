@@ -1,7 +1,6 @@
 #!/bin/bash
 git pull
 
-docker stop attdl-bot && docker rm attdl-bot
-
-docker build -t attdl .
-docker run -d --restart=always --name attdl-bot attdl
+docker-compose down
+docker-compose build
+docker-compose up -d

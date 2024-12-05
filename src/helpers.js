@@ -96,7 +96,8 @@ const handleYoutubeLink = async (url) => {
 
     const ytdlp = async () => {
         try {
-            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp -o "./downloads/%(id)s.%(ext)s" --format mp4 --print-json --max-filesize 50M ${url}`.json()
+            const command = Bun.env?.WARP_PROXY ? `yt-dlp --proxy socks5://${Bun.env.WARP_PROXY}` : 'yt-dlp'
+            const out = await $`mkdir -p ./downloads && timeout 15s ${command} -o "./downloads/%(id)s.%(ext)s" --format mp4 --print-json --max-filesize 50M ${url}`.json()
 
             return out
         } catch (e) {

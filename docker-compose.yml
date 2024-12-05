@@ -1,0 +1,34 @@
+version: "3.8"
+services:
+  attdl-bot:
+    build:
+      context: .
+    container_name: attdl-bot
+    restart: always
+    command: ["bun", "run", "index.js"]
+    depends_on:
+      - warp
+    networks:
+      - shared-network
+
+  warp:
+    image: caomingjun/warp
+    container_name: warp
+    restart: always
+    ports:
+      - "1080:1080"
+    environment:
+      - WARP_SLEEP=2
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    volumes:
+      - /root/configs/warp:/var/lib/cloudflare-warp
+    networks:
+      - shared-network
+
+networks:
+  shared-network:
+    driver: bridge
