@@ -5,7 +5,7 @@ const getLinkType = (link) => {
     if (link.includes('tiktok.com')) return 'tiktok'
     if (link.includes('youtube.com') || link.includes('youtu.be')) return 'youtube'
     if (link.includes('twitter.com') || link.includes('x.com')) return 'twitter'
-    if (link.includes('instagram.com/reel') || link.includes('instagram.com/p')) return 'instagram'
+    if (link.includes('instagram.com/reel') || link.includes('instagram.com/p') || link.includes('instagram.com/share/reel')) return 'instagram'
     return null
 }
 
