@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN bun install
 
-RUN apk add --no-cache python3 py3-pip && \
+RUN apk add --no-cache python3 py3-pip ffmpeg && \
     pip install --break-system-packages --no-cache-dir requests yt-dlp
 
 COPY . .
