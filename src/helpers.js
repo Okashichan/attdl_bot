@@ -152,7 +152,7 @@ const handleInstagramLink = async (url) => {
 
     const ytdlp = async () => {
         try {
-            const out = await $`timeout 15s yt-dlp --print-json --skip-download ${url}`.json()
+            const out = await $`timeout 15s yt-dlp --proxy socks5://warp:1080 --print-json --skip-download ${url}`.json()
 
             return out
         } catch (e) {
