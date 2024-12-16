@@ -261,15 +261,17 @@ async function handleInstagramLink(url, chatId, userMsgId, userMsg) {
         return
     }
 
-    if (data?.url) {
-        bot.sendVideo(chatId, data.url, {
+    if (data?.path) {
+        bot.sendVideo(chatId, data.path, {
             ...sendOptions,
             caption: data.text,
             reply_to_message_id: userMsgId
         }).catch((err) => {
             console.log(err.code)
             console.log(err.response.body)
-        })
+        }).finally(
+            unlinkSync(data.path)
+        )
     }
 }
 
@@ -471,24 +473,32 @@ async function handleInstagramInlineLogic(query, queryId) {
     if (data === undefined || data === null) {
         console.log(`inline_query(${query})|failed to handle your link...`)
     }
-    else if (data?.url) {
+    else if (data?.path) {
+        const { video: { file_id: cachedVideo } = {} } = await bot.sendVideo(cachedChat, data.path, {
+            ...sendOptions,
+            caption: data.text
+        }).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        }) || {}
+
+        if (!cachedVideo) {
+            return
+        }
+
+        fs.rm('downloads', { recursive: true, force: true })
+
         let results = [{
             type: 'video',
             id: 0,
-            video_url: data.url,
             caption: data.text,
-            title: 'Instagram video',
-            thumb_url: data.url,
-            mime_type: 'video/mp4',
+            video_file_id: cachedVideo,
+            title: data.text,
             reply_markup: {
                 inline_keyboard: [
                     [{
                         text: 'Watch on Instagram',
                         url: query
-                    }],
-                    [{
-                        text: 'Download',
-                        url: data.url
                     }]
                 ]
             }

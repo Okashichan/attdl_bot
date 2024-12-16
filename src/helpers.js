@@ -35,7 +35,7 @@ const handleTikTokLink = async (url, type = 'message') => {
 
             return out
         } catch (e) {
-            console.log(`handleTikTokLink()|failed to call python script...`)
+            console.log(e.stderr.toString())
         }
     }
 
@@ -100,7 +100,7 @@ const handleYoutubeLink = async (url) => {
 
             return out
         } catch (e) {
-            console.log(`handleYoutubeLink()|failed to call python script...`)
+            console.log(e.stderr.toString())
             fs.rm('downloads', { recursive: true, force: true })
         }
     }
@@ -152,19 +152,18 @@ const handleInstagramLink = async (url) => {
 
     const ytdlp = async () => {
         try {
-            const out = await $`timeout 15s yt-dlp --proxy socks5://warp:1080 --print-json --skip-download ${url}`.json()
-            console.log(out)
+            const out = await $`timeout 15s yt-dlp --proxy socks5://warp:1080 --print-json ${url}`.json()
             return out
         } catch (e) {
-            console.log(`handleYoutubeLink()|failed to call python script...`)
-            console.log(e)
+            console.log(e.stderr.toString())
+            fs.rm('downloads', { recursive: true, force: true })
         }
     }
 
     const res = await ytdlp()
 
     return {
-        url: res?.url,
+        path: res?.filename,
         text: res?.description
     }
 }
