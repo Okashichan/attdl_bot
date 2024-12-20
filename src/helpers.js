@@ -150,21 +150,38 @@ const handleTwitterLink = async (url) => {
 const handleInstagramLink = async (url) => {
     console.log(`Instagram id: ${url}`)
 
-    const ytdlp = async () => {
-        try {
-            const out = await $`timeout 15s yt-dlp --proxy socks5://warp:1080 --print-json --ppa "ffmpeg:-c:v libx265 -tag:v hvc1" ${url}`.json()
-            return out
-        } catch (e) {
-            console.log(e.stderr.toString())
-            fs.rm('downloads', { recursive: true, force: true })
+    const res = await fetch('https://api.co.rooot.gay', {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+    }).then(res => res.json()).catch(e => console.log(e))
+
+    if (res?.status === 'error')
+    {
+        console.log(res)
+        const ytdlp = async () => {
+            try {
+                const out = await $`timeout 15s yt-dlp --proxy socks5://warp:1080 --print-json --ppa "ffmpeg:-c:v libx265 -tag:v hvc1" ${url}`.json()
+                return out
+            } catch (e) {
+                console.log(e.stderr.toString())
+                fs.rm('downloads', { recursive: true, force: true })
+            }
+        }
+    
+        const r = await ytdlp()
+    
+        return {
+            path: r?.filename,
+            text: r?.description
         }
     }
 
-    const res = await ytdlp()
-
     return {
-        path: res?.filename,
-        text: res?.description
+        url: res?.url
     }
 }
 

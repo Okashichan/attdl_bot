@@ -261,8 +261,8 @@ async function handleInstagramLink(url, chatId, userMsgId, userMsg) {
         return
     }
 
-    if (data?.path) {
-        bot.sendVideo(chatId, data.path, {
+    if (data?.path || data?.url) {
+        bot.sendVideo(chatId, data.path ? data.path : data.url, {
             ...sendOptions,
             caption: data.text,
             reply_to_message_id: userMsgId
@@ -270,7 +270,7 @@ async function handleInstagramLink(url, chatId, userMsgId, userMsg) {
             console.log(err.code)
             console.log(err.response.body)
         }).finally(
-            unlinkSync(data.path)
+            data?.path ? unlinkSync(data.path) : null
         )
     }
 }
@@ -499,6 +499,41 @@ async function handleInstagramInlineLogic(query, queryId) {
                     [{
                         text: 'Watch on Instagram',
                         url: query
+                    }]
+                ]
+            }
+        }]
+
+        bot.answerInlineQuery(queryId, results).catch((err) => {
+            console.log(err.code)
+            console.log(err.response.body)
+        })
+    }
+    else if (data?.url) {
+        const videoBuffer = await download(data.url)
+
+        const { video: { file_id: fileId } } = await bot.sendVideo(cachedChat, videoBuffer, {
+            ...sendOptions
+        }).catch(async (err) => {
+            console.log(err.code)
+            console.log(err.response?.body)
+        }) || {}
+
+        let results = [{
+            type: 'video',
+            id: 0,
+            video_url: fileId,
+            title: `Universal Video`,
+            mime_type: 'video/mp4',
+            reply_markup: {
+                inline_keyboard: [
+                    [{
+                        text: 'Watch on Instagram',
+                        url: query
+                    }],
+                    [{
+                        text: 'Download',
+                        url: data.url
                     }]
                 ]
             }
