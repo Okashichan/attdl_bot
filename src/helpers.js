@@ -96,7 +96,7 @@ const handleYoutubeLink = async (url) => {
 
     const ytdlp = async () => {
         try {
-            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp --proxy socks5://warp:1080 -o "./downloads/%(id)s.%(ext)s" --merge-output-format mp4 --print-json --max-filesize 50M --ppa "ffmpeg:-c:v libx265 -tag:v hvc1" ${url}`.json()
+            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp --proxy socks5://warp:1080 -o "./downloads/%(id)s.%(ext)s" --merge-output-format mp4 --print-json --max-filesize 50M ${url}`.json()
 
             return out
         } catch (e) {
