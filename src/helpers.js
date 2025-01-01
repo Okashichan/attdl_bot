@@ -150,13 +150,15 @@ const handleTwitterLink = async (url) => {
 const handleInstagramLink = async (url) => {
     console.log(`Instagram id: ${url}`)
 
+    const newUrl = (await getResponceUrl(url)).split('?')[0]
+
     const res = await fetch('https://api.co.rooot.gay', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url: newUrl })
     }).then(res => res.json()).catch(e => console.log(e))
 
     if (res?.status === 'error')
