@@ -9,6 +9,7 @@ services:
       - NTBA_FIX_350=${NTBA_FIX_350}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_CACHED_CHAT=${TELEGRAM_CACHED_CHAT}
+      
     # depends_on:
     #   - warp
     # networks:
