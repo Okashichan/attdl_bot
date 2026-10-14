@@ -18,13 +18,33 @@ const sendOptions = {
 
 const bot = new TelegramBot(token, { polling: true })
 
+// Global safety net: log unhandled rejections instead of letting them
+// crash the process. Every call below should already have a .catch,
+// but this covers anything future changes miss.
+process.on('unhandledRejection', (reason) => {
+    console.log('Unhandled rejection:', reason?.response?.body ?? reason)
+})
+
+// Shared helper: detect "bot doesn't have permission to post here" errors,
+// so callers can skip expensive retry/download logic instead of repeating
+// a failure that will never succeed until an admin changes chat settings.
+function isForbidden(err) {
+    const desc = err?.response?.body?.description ?? ''
+    return /CHAT_WRITE_FORBIDDEN|not enough rights/i.test(desc)
+}
+
+function logTelegramError(err) {
+    console.log(err?.code)
+    console.log(err?.response?.body ?? err)
+}
+
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id
     const language = msg.from.language_code
 
     const startText = language === 'uk' ? locale['UA'].start : locale['EN'].start
 
-    bot.sendMessage(chatId, startText)
+    bot.sendMessage(chatId, startText).catch(logTelegramError)
 })
 
 bot.onText(/\/help/, (msg) => {
@@ -33,7 +53,7 @@ bot.onText(/\/help/, (msg) => {
 
     const helpText = language === 'uk' ? locale['UA'].help : locale['EN'].help
 
-    bot.sendMessage(chatId, helpText)
+    bot.sendMessage(chatId, helpText).catch(logTelegramError)
 })
 
 bot.onText(urlRe, async (msg, match) => {
@@ -110,7 +130,7 @@ bot.on('polling_error', (err) => {
     console.log(err.response?.body)
 })
 
-async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType, isTopic, canSendInTopic) {
+async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType) {
     const data = await helpers.handleTikTokLink(url)
 
     if (data === undefined || data === null) {
@@ -124,37 +144,40 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType, isTo
             caption: data.title,
             reply_to_message_id: userMsgId,
         }).catch(async (err) => {
-            console.log(err.code)
-            console.log(err.response?.body)
+            logTelegramError(err)
+
+            if (isForbidden(err)) {
+                console.log(`onText(${userMsg})|bot lacks media permissions in chat ${chatId}, skipping retry`)
+                return
+            }
 
             if (data.data_size > 52428800) {
-                console.log(`onText(${userMsg})|video is to big(${data.data_size} bytes)...`)
-                bot.sendMessage(chatId, `🐌 Sowwy onii-chan... it\'s too big for me\nHowever, <a href='${data.urls[0]}'>URL</a> 👉👈`, { parse_mode: 'HTML' })
+                console.log(`onText(${userMsg})|video is too big (${data.data_size} bytes)...`)
+                bot.sendMessage(chatId, `🐌 Sowwy onii-chan... it's too big for me\nHowever, <a href='${data.urls[0]}'>URL</a> 👉👈`, { parse_mode: 'HTML' })
+                    .catch(logTelegramError)
                 return
             }
 
             console.log(`onText(${userMsg})|Trying to download video...`)
 
-            if (err.response?.body.error_code === 400) {
-                // bot.sendMessage(chatId, '🐌 I\'m Fast as Fuck Boi')
-
+            if (err.response?.body?.error_code === 400) {
                 let videoBuffer = await download(data.urls[0])
                 if (videoBuffer === undefined || videoBuffer === null) return
 
-                bot.sendChatAction(chatId, 'upload_video')
+                bot.sendChatAction(chatId, 'upload_video').catch(logTelegramError)
 
                 const statusInterval = setInterval(() => {
-                    bot.sendChatAction(chatId, 'upload_video')
+                    bot.sendChatAction(chatId, 'upload_video').catch((e) => {
+                        logTelegramError(e)
+                        clearInterval(statusInterval) // stop hammering if it keeps failing
+                    })
                 }, 5000)
 
                 bot.sendVideo(chatId, videoBuffer, {
                     ...sendOptions,
                     caption: data.title,
                     reply_to_message_id: userMsgId
-                }).catch(async (err) => {
-                    console.log(err.code)
-                    console.log(err.response?.body)
-                }).then(() => {
+                }).catch(logTelegramError).then(() => {
                     clearInterval(statusInterval)
                 })
             }
@@ -165,21 +188,19 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType, isTo
 
         for (const [index, el] of data.images.entries()) {
             console.log(`       part #${index + 1}; size=${el.length}; timeout=${interval * index}`)
-            bot.sendChatAction(chatId, 'upload_photo')
+            bot.sendChatAction(chatId, 'upload_photo').catch(logTelegramError)
+
             await bot.sendMediaGroup(chatId, el, {
                 ...sendOptions,
                 reply_to_message_id: userMsgId
-            }).catch(async (err) => {
-                console.log(err.code)
-                console.log(err.response?.body)
-            })
+            }).catch(logTelegramError)
 
             if (index === data.images.length - 1) break
 
             await Bun.sleep(interval)
         }
 
-        bot.sendChatAction(chatId, 'upload_audio')
+        bot.sendChatAction(chatId, 'upload_audio').catch(logTelegramError)
 
         let audioBuffer = await download(data.song.url)
 
@@ -191,10 +212,7 @@ async function handleTikTokLogic(url, chatId, userMsgId, userMsg, chatType, isTo
             performer: data.song.author,
             title: data.song.title,
             duration: data.song.duration
-        }, { filename: data.song.title + '.mp3' }).catch(async (err) => {
-            console.log(err.code)
-            console.log(err.response?.body)
-        })
+        }, { filename: data.song.title + '.mp3' }).catch(logTelegramError)
     }
 }
 
@@ -212,13 +230,8 @@ async function handleYoutubeLogic(url, chatId, userMsgId, userMsg) {
             reply_to_message_id: userMsgId,
             caption: data.title
         })
-        .catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
-        .finally(
-            unlinkSync(data.path)
-        )
+        .catch(logTelegramError)
+        .finally(() => unlinkSync(data.path)) // was `.finally(unlinkSync(data.path))` — ran immediately instead of on settle
     }
 }
 
@@ -235,10 +248,7 @@ async function handleTwitterLogic(url, chatId, userMsgId, userMsg) {
             ...sendOptions,
             reply_to_message_id: userMsgId,
             caption: data.text
-        }).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        }).catch(logTelegramError)
     }
 
     if (data?.images) {
@@ -246,10 +256,7 @@ async function handleTwitterLogic(url, chatId, userMsgId, userMsg) {
         bot.sendMediaGroup(chatId, data.images, {
             ...sendOptions,
             reply_to_message_id: userMsgId
-        }).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        }).catch(logTelegramError)
     }
 }
 
@@ -266,12 +273,8 @@ async function handleInstagramLink(url, chatId, userMsgId, userMsg) {
             ...sendOptions,
             caption: data.text,
             reply_to_message_id: userMsgId
-        }).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        }).finally(
-            data?.path ? unlinkSync(data.path) : null
-        )
+        }).catch(logTelegramError)
+        .finally(() => { if (data?.path) unlinkSync(data.path) }) // was `.finally(data?.path ? unlinkSync(data.path) : null)` — ran immediately
     }
 }
 
@@ -306,10 +309,7 @@ async function handleTikTokInlineLogic(query, queryId) {
             }
         })
 
-        bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
     } else if (data?.images) {
         let results = data.images.flat(1).map((item, index) => {
             return {
@@ -341,10 +341,7 @@ async function handleTikTokInlineLogic(query, queryId) {
             }
         })
 
-        bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code)
-            console.log(err.response?.body)
-        })
+        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
     }
     else {
         console.log(`inline_query(${query})|Something realy went wrong...`)
@@ -362,16 +359,13 @@ async function handleYoutubeInlineLogic(query, queryId) {
         const { video: { file_id: cachedVideo } = {} } = await bot.sendVideo(cachedChat, data.path, {
             ...sendOptions,
             caption: data.title
-        }).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        }) || {}
+        }).catch(logTelegramError) || {}
 
         if (!cachedVideo) {
             return
         }
 
-        fs.rm('downloads', { recursive: true, force: true })
+        fs.rm('downloads', { recursive: true, force: true }).catch((e) => console.log('cleanup failed:', e))
 
         let results = [{
             type: 'video',
@@ -389,10 +383,7 @@ async function handleYoutubeInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
     }
 }
 
@@ -425,10 +416,7 @@ async function handleTwitterInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
     }
     else if (data?.images) {
         let results = data.images.map((item, index) => {
@@ -457,10 +445,7 @@ async function handleTwitterInlineLogic(query, queryId) {
             }
         })
 
-        bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
     }
     else {
         console.log(`inline_query(${query})|Something realy went wrong...`)
@@ -477,16 +462,13 @@ async function handleInstagramInlineLogic(query, queryId) {
         const { video: { file_id: cachedVideo } = {} } = await bot.sendVideo(cachedChat, data.path, {
             ...sendOptions,
             caption: data.text
-        }).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        }) || {}
+        }).catch(logTelegramError) || {}
 
         if (!cachedVideo) {
             return
         }
 
-        fs.rm('downloads', { recursive: true, force: true })
+        fs.rm('downloads', { recursive: true, force: true }).catch((e) => console.log('cleanup failed:', e))
 
         let results = [{
             type: 'video',
@@ -504,20 +486,21 @@ async function handleInstagramInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
     }
     else if (data?.url) {
         const videoBuffer = await download(data.url)
 
-        const { video: { file_id: fileId } } = await bot.sendVideo(cachedChat, videoBuffer, {
+        // fixed: `{ video: { file_id } }` with no default on the inner object
+        // throws "Cannot destructure property 'file_id' of 'undefined'" when
+        // sendVideo fails and the outer catch returns `undefined` -> `{}`
+        const { video: { file_id: fileId } = {} } = await bot.sendVideo(cachedChat, videoBuffer, {
             ...sendOptions
-        }).catch(async (err) => {
-            console.log(err.code)
-            console.log(err.response?.body)
-        }) || {}
+        }).catch(logTelegramError) || {}
+
+        if (!fileId) {
+            return
+        }
 
         let results = [{
             type: 'video',
@@ -539,9 +522,6 @@ async function handleInstagramInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch((err) => {
-            console.log(err.code)
-            console.log(err.response.body)
-        })
+        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
     }
 }

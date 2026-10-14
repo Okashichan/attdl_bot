@@ -35,7 +35,8 @@ const handleTikTokLink = async (url, type = 'message') => {
 
             return out
         } catch (e) {
-            console.log(e.stderr.toString())
+            // console.log(e.stderr.toString())
+            console.log('aweme dead')
         }
     }
 
@@ -94,14 +95,39 @@ const handleTikTokLink = async (url, type = 'message') => {
 const handleYoutubeLink = async (url) => {
     console.log(`Youtube id: ${url}`)
 
-    const ytdlp = async () => {
+    // 1. Try to get a direct URL from a progressive (video+audio combined) format.
+    //    This works for Shorts fairly often since they're short/low-res enough
+    //    that YouTube still serves a combined stream for them.
+    const tryDirectUrl = async () => {
         try {
-            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp --proxy socks5://warp:1080 -o "./downloads/%(id)s.%(ext)s" --merge-output-format mp4 --print-json --max-filesize 50M ${url}`.json()
-
+            const out = await $`timeout 15s yt-dlp --print-json --skip-download -f "best[acodec!=none][vcodec!=none][ext=mp4]" ${url}`.json()
             return out
         } catch (e) {
-            console.log(e.stderr.toString())
+            console.log(e.stderr?.toString?.() ?? e)
+            return null
+        }
+    }
+
+    const direct = await tryDirectUrl()
+
+    if (direct?.url) {
+        return {
+            url: direct.url,
+            title: direct.title,
+        }
+    }
+
+    // 2. Fall back to downloading + muxing locally — needed for anything
+    //    that only has separate video/audio streams (most non-Shorts content,
+    //    and some Shorts too depending on YouTube's mood that day).
+    const ytdlp = async () => {
+        try {
+            const out = await $`mkdir -p ./downloads && timeout 15s yt-dlp -o "./downloads/%(id)s.%(ext)s" --merge-output-format mp4 --print-json --max-filesize 50M ${url}`.json()
+            return out
+        } catch (e) {
+            console.log(e.stderr?.toString?.() ?? e)
             fs.rm('downloads', { recursive: true, force: true })
+            return null
         }
     }
 
@@ -150,40 +176,39 @@ const handleTwitterLink = async (url) => {
 const handleInstagramLink = async (url) => {
     console.log(`Instagram id: ${url}`)
 
-    const newUrl = (await getResponceUrl(url)).split('?')[0]
+    const getDirectUrl = async () => {
+        try {
+            const out = await $`timeout 15s yt-dlp \
+                -f "best[ext=mp4]/best" \
+                --no-download \
+                --print-json \
+                --skip-download \
+                ${url}`.json()
 
-    const res = await fetch('https://api.co.rooot.gay', {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ url: newUrl })
-    }).then(res => res.json()).catch(e => console.log(e))
-
-    if (res?.status === 'error')
-    {
-        console.log(res)
-        const ytdlp = async () => {
-            try {
-                const out = await $`timeout 15s yt-dlp --proxy socks5://warp:1080 --print-json --ppa "ffmpeg:-c:v libx265 -tag:v hvc1" ${url}`.json()
-                return out
-            } catch (e) {
-                console.log(e.stderr.toString())
-                fs.rm('downloads', { recursive: true, force: true })
-            }
-        }
-    
-        const r = await ytdlp()
-    
-        return {
-            path: r?.filename,
-            text: r?.description
+            return out
+        } catch (e) {
+            console.log(e.stderr?.toString?.() ?? e)
+            return null
         }
     }
 
+    const info = await getDirectUrl()
+
+    if (!info) {
+        return null
+    }
+
+    // top-level `url` is present for single-format extractions;
+    // fall back to the best entry in `formats` if not
+    const directUrl = info.url
+        ?? info.requested_downloads?.[0]?.url
+        ?? info.formats?.[info.formats.length - 1]?.url
+
     return {
-        url: res?.url
+        url: directUrl,
+        text: info.description,
+        thumbnail: info.thumbnail,
+        duration: info.duration
     }
 }
 
