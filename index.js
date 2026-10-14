@@ -33,6 +33,23 @@ function isForbidden(err) {
     return /CHAT_WRITE_FORBIDDEN|not enough rights/i.test(desc)
 }
 
+const MAX_INLINE_RESULTS = 50 // Telegram's hard limit per answerInlineQuery
+
+// For every result, add a "clean" twin without caption or inline keyboard.
+// Picking it sends just the bare media.
+function withCleanVariants(results) {
+    return results.flatMap((r) => {
+        const { caption, reply_markup, ...bare } = r
+        return [r, { ...bare, id: `clean-${r.id}`, title: `${r.title || 'Media'} (clean)` }]
+    })
+}
+
+function answerInline(queryId, results) {
+    return bot
+        .answerInlineQuery(queryId, withCleanVariants(results).slice(0, MAX_INLINE_RESULTS))
+        .catch(logTelegramError)
+}
+
 function logTelegramError(err) {
     console.log(err?.code)
     console.log(err?.response?.body ?? err)
@@ -309,7 +326,7 @@ async function handleTikTokInlineLogic(query, queryId) {
             }
         })
 
-        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
+        answerInline(queryId, results)
     } else if (data?.images) {
         let results = data.images.flat(1).map((item, index) => {
             return {
@@ -341,7 +358,7 @@ async function handleTikTokInlineLogic(query, queryId) {
             }
         })
 
-        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
+        answerInline(queryId, results)
     }
     else {
         console.log(`inline_query(${query})|Something realy went wrong...`)
@@ -383,7 +400,7 @@ async function handleYoutubeInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
+        answerInline(queryId, results)
     }
 }
 
@@ -416,7 +433,7 @@ async function handleTwitterInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
+        answerInline(queryId, results)
     }
     else if (data?.images) {
         let results = data.images.map((item, index) => {
@@ -445,7 +462,7 @@ async function handleTwitterInlineLogic(query, queryId) {
             }
         })
 
-        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
+        answerInline(queryId, results)
     }
     else {
         console.log(`inline_query(${query})|Something realy went wrong...`)
@@ -486,7 +503,7 @@ async function handleInstagramInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
+        answerInline(queryId, results)
     }
     else if (data?.url) {
         const videoBuffer = await download(data.url)
@@ -522,6 +539,6 @@ async function handleInstagramInlineLogic(query, queryId) {
             }
         }]
 
-        bot.answerInlineQuery(queryId, results).catch(logTelegramError)
+        answerInline(queryId, results)
     }
 }
