@@ -230,13 +230,28 @@ const handleTwitterLink = async (url) => {
     res?.mediaURLs?.length >= 1 &&
     res?.mediaURLs.at(-1)?.includes('pbs.twimg.com')
   ) {
+    const images = res.media_extended.map((el) => {
+      return {
+        type: 'photo',
+        media: el.url,
+      };
+    });
+
+    const perChunk = 9; // images limit
+    const chunkedImages = images.reduce((resultArray, item, index) => {
+      const chunkIndex = Math.floor(index / perChunk);
+
+      if (!resultArray[chunkIndex]) {
+        resultArray[chunkIndex] = [];
+      }
+
+      resultArray[chunkIndex].push(item);
+
+      return resultArray;
+    }, []);
+
     return {
-      images: res.media_extended.map((el) => {
-        return {
-          type: 'photo',
-          media: el.url,
-        };
-      }),
+      images: chunkedImages,
       text: res.text.replace(/https:\/\/t\.co\/\S+/g, ''),
     };
   }
